@@ -2,10 +2,23 @@
   "name": "frame-master-plugin-react-ssr",
   "module": "index.ts",
   "type": "module",
+  "version": "1.0.0",
+  "bin": {
+    "frame-master-plugin-react-ssr": "bin/index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
+  "dependencies": {
+    "commander": "^14.0.1"
+  },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "frame-master": "link:frame-master"
+  },
+  "exports": {
+    "./shell": "./src/Shell.tsx",
+    "./hydrate": "./src/client/hydrate.tsx",
+    "./plugin": "./index.ts"
   }
 }
