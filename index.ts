@@ -5,7 +5,7 @@ import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import { StackLayouts } from "@/utils";
+import { StackLayouts } from "@/router/layout";
 import { Builder } from "@/build";
 import type { Build_Plugins } from "./src/build/types";
 
@@ -155,9 +155,10 @@ function serveHTML(pathname: string, request: masterRequest | null) {
   if (!page) {
     return null;
   }
+
   return renderToReadableStream(
     globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__({
-      children: StackLayouts(page.page(), page.layouts),
+      children: StackLayouts({ children: page.page(), layouts: page.layouts }),
       request,
     }),
     {

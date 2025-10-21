@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { join } from "path";
-import { getRelatedLayoutPaths } from "../utils";
+import { getRelatedLayoutPaths } from "../layout";
 
 type RoutePage = () => JSX.Element;
 
@@ -99,9 +99,11 @@ class Router {
       .map(([k, v]) => k)
       .filter((k) => k.endsWith("layout.tsx"));
 
-    const relatedLayoutPaths = getRelatedLayoutPaths(path, layoutsPaths).map(
-      (p) => (p.startsWith("/") ? p.slice(1) : p)
-    );
+    const relatedLayoutPaths = getRelatedLayoutPaths(
+      path,
+      layoutsPaths,
+      this.pageDir
+    ).map((p) => (p.startsWith("/") ? p.slice(1) : p));
     const ralatedLayouts = relatedLayoutPaths.map(
       (path) => this.routes.get(path)!
     );

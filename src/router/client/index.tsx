@@ -1,17 +1,14 @@
-import {
-  createContext,
-  createElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import type { JSX } from "react";
 import { join, routeGetter } from "@/utils";
 import { DevProvider } from "@/client/dev";
-import { getRelatedLayoutPaths, importLayouts } from "../utils";
 import { useRequest } from "@/hooks";
+import {
+  StackLayouts,
+  importLayouts,
+  getRelatedLayoutPaths,
+  layoutGetter,
+} from "@/router/layout";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
@@ -47,7 +44,11 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     searchParams.set("t", new Date().getTime().toString());
 
     const url =
-      join("src", "pages", path, "index.js") +
+      join(
+        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
+        path,
+        "index.js"
+      ) +
       (process.env.NODE_ENV === "development"
         ? `?${searchParams.toString()}`
         : "");
@@ -55,13 +56,17 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       default: () => JSX.Element;
     };
     setCurrentPageElement(
-      <LayoutStack
-        layouts={(await layoutGetter(path, routeGetter(request))).map(
-          (_module) => _module.default
-        )}
+      <StackLayouts
+        layouts={(
+          await layoutGetter(
+            path,
+            routeGetter(request),
+            globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+          )
+        ).map((_module) => _module.default)}
       >
         <_module.default />
-      </LayoutStack>
+      </StackLayouts>
     );
   }, []);
 
@@ -89,22 +94,4 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       <DevProvider>{currentPageElement}</DevProvider>
     </CurrentRouteContext.Provider>
   );
-}
-
-export function layoutGetter(currentPath: string, layoutsList: Array<string>) {
-  const related = getRelatedLayoutPaths(currentPath, layoutsList);
-  return importLayouts(related);
-}
-
-type LayoutElementFunction = (props: { children: JSX.Element }) => JSX.Element;
-
-type LayoutStackProps = {
-  children: JSX.Element;
-  layouts: Array<LayoutElementFunction>;
-};
-
-export function LayoutStack({ children, layouts }: LayoutStackProps) {
-  return layouts.reduceRight((prev, LayoutComponent) => {
-    return <LayoutComponent>{prev}</LayoutComponent>;
-  }, children);
 }

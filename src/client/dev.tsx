@@ -8,7 +8,7 @@ export function DevProvider({ children }: { children: React.ReactNode }) {
   const ws = useRef<null | WebSocket>(null);
   useEffect(() => {
     ws.current = new WebSocket(
-      `${location.protocol == "http" ? "ws" : "wss"}://${location.host}/bun-hmr`
+      `${location.protocol == "http" ? "ws" : "wss"}://${location.host}`
     );
     ws.current.addEventListener("message", (event) => {
       const data = JSON.parse(event.data);

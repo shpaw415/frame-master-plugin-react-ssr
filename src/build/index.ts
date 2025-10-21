@@ -1,6 +1,7 @@
 import { join } from "path";
 import type { Build_Plugins } from "./types";
 import packageJson from "../../package.json";
+import { mkdirSync, rmSync } from "fs";
 
 export const buildDir = join(
   process.cwd(),
@@ -32,6 +33,8 @@ const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
   env: "PUBLIC_*",
 };
 
+console.log("Default build options:", DEFAULT_BUILD_OPTIONS);
+
 type BuildProps = {
   plugins: Build_Plugins[];
   enableLogging?: boolean;
@@ -50,8 +53,12 @@ class Builder {
     if (!this.isLogEnabled) return;
     console.log("[Frame-Master-plugin-react-ssr Builder]:", ...data);
   }
+  private error(...data: any[]) {
+    console.error("[Frame-Master-plugin-react-ssr Builder]:", ...data);
+  }
 
   async build(entrypoints: string[]) {
+    this.clearBuildDir();
     const buildConfig = await this.getPluginsOptions();
 
     buildConfig.entrypoints = [...buildConfig.entrypoints, ...entrypoints];
@@ -132,6 +139,18 @@ class Builder {
         (target as any)[key] = sourceValue;
       }
       // If values are the same, no action needed
+    }
+  }
+  private clearBuildDir() {
+    try {
+      rmSync(buildDir, { recursive: true, force: true });
+    } catch (e) {
+      this.error(e);
+    }
+    try {
+      mkdirSync(buildDir, { recursive: true });
+    } catch (e) {
+      this.error(e);
     }
   }
 

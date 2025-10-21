@@ -9,24 +9,41 @@ import { hydrateRoot } from "react-dom/client";
 import Shell from "../Shell";
 import type { JSX } from "react";
 import { join } from "@/utils";
-import { layoutGetter, LayoutStack } from "@/router/client";
+import { layoutGetter, StackLayouts } from "@/router/layout";
 
 async function start() {
   const url = new URL(window.location.href);
   const path = url.pathname;
-  const page = (await import("/" + join("src", "pages", path, "index.js"))) as {
+  const page = (await import(
+    "/" +
+      join(
+        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
+        path,
+        "index.js"
+      )
+  )) as {
     default: () => JSX.Element;
   };
   const layoutRoutes = globalThis.__ROUTES__
     .filter((path) => path.endsWith("layout.js"))
-    .map((path) => "/" + join("src", "pages", path));
-  const layouts = await layoutGetter(url.pathname, layoutRoutes);
+    .map(
+      (path) =>
+        "/" + join(globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir, path)
+    );
+
+  const layouts = await layoutGetter(
+    url.pathname,
+    layoutRoutes,
+    globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+  );
+
+  console.log({ layouts, layoutRoutes, path });
   hydrateRoot(
     document.getElementById("root")!,
     <Shell request={null}>
-      <LayoutStack layouts={layouts.map((_module) => _module.default)}>
+      <StackLayouts layouts={layouts.map((_module) => _module.default)}>
         <page.default />
-      </LayoutStack>
+      </StackLayouts>
     </Shell>
   );
 }
