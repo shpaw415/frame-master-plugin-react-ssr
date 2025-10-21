@@ -2,12 +2,13 @@ import Router from "@/router/server";
 import type { FrameMasterPlugin } from "frame-master/plugin/types";
 import type { masterRequest } from "frame-master/server/request";
 import type { JSX } from "react";
-import { join } from "path";
+import { join, parse } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
 import { StackLayouts } from "@/router/layout";
 import { Builder } from "@/build";
 import type { Build_Plugins } from "./src/build/types";
+import FrameMasterConfig from "frame-master/config";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   process.cwd(),
@@ -35,6 +36,7 @@ export type ReactSSRPluginOptions = {
   /** Enable debug logs **default: false** */
   debug?: boolean;
   buildConfig?: Build_Plugins[];
+  devServerPort?: number;
 };
 
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
@@ -43,6 +45,10 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
   debug: false,
   buildConfig: [],
+  devServerPort:
+    typeof FrameMasterConfig.HTTPServer.port == "number"
+      ? FrameMasterConfig.HTTPServer.port + 1
+      : parseInt(FrameMasterConfig.HTTPServer.port!) + 1,
 } as const;
 
 declare global {
@@ -53,6 +59,7 @@ declare global {
    */
   var __ROUTES__: Array<string>;
   var __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
+  var __HMR_WEBSOCKET__: Bun.Server<undefined>;
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
     request: masterRequest | null;
@@ -144,6 +151,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           .map((route) => join(router?.pageDir!, route));
 
         await builder.build(routes);
+
+        if (process.env.NODE_ENV !== "production") {
+          DevServer(config as Required<ReactSSRPluginOptions>);
+        }
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
@@ -181,6 +192,40 @@ function serveHTML(pathname: string, request: masterRequest | null) {
 
 function serveFromBuild(pathname: string, builder: Builder) {
   return builder.getFileFromPath(pathname)?.stream() || null;
+}
+
+function log(...data: any[]) {
+  if (globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) {
+    console.log("[ReactSSR Plugin]:", ...data);
+  }
+}
+
+function DevServer(config: Required<ReactSSRPluginOptions>) {
+  globalThis.__HMR_WEBSOCKET__ ??= Bun.serve({
+    port: config.devServerPort,
+    websocket: {
+      open(ws) {
+        log("[HMR] Client connected for HMR");
+      },
+      close(ws) {
+        log("[HMR] Client disconnected from HMR");
+      },
+      message(ws, message) {
+        log("[HMR] Message from client:", message);
+      },
+    },
+    fetch(request, server) {
+      const url = new URL(request.url);
+
+      if (url.pathname === "/hmr") {
+        const ws = server.upgrade(request, {});
+        return new Response("welcome!");
+      }
+
+      return new Response("Not Found", { status: 404 });
+    },
+  });
+  return globalThis.__HMR_WEBSOCKET__;
 }
 
 export default createPlugin;
