@@ -62,8 +62,6 @@ export function getRelatedLayoutPaths(
       layoutPath.startsWith("/") ? layoutPath : "/" + layoutPath
     );
 
-  console.log("getRelatedLayoutPaths", { path, layouts, _layouts, segments });
-
   let currentPath = "";
 
   if (segments.length === 0) {
@@ -94,6 +92,5 @@ export function layoutGetter(
   basePath: string
 ) {
   const related = getRelatedLayoutPaths(currentPath, layoutsList, basePath);
-  console.log("layoutGetter", { currentPath, related });
   return importLayouts(related);
 }
