@@ -36,7 +36,8 @@ export type ReactSSRPluginOptions = {
   /** Enable debug logs **default: false** */
   debug?: boolean;
   buildConfig?: Build_Plugins[];
-  devServerPort?: number;
+  /** WebSocket Dev Server for HMR reloading client side */
+  devServerPort: number;
 };
 
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
@@ -45,7 +46,7 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
   debug: false,
   buildConfig: [],
-  devServerPort: 0,
+  devServerPort: 3001,
 };
 
 declare global {
@@ -77,12 +78,6 @@ export type reactSSRPluginContext = {
  * this plugin adds React server-side rendering capabilities to Frame Master.
  */
 function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
-  options.devServerPort =
-    options.devServerPort ||
-    (typeof FrameMasterConfig.HTTPServer.port == "number"
-      ? FrameMasterConfig.HTTPServer.port + 1
-      : parseInt(FrameMasterConfig.HTTPServer.port!) + 1);
-
   const config = { ...DEFAULT_CONFIG, ...options };
 
   const builder = new Builder({
