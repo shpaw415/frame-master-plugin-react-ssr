@@ -1,4 +1,4 @@
-import { createContext, useCallback, useState } from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import type { JSX } from "react";
 import { join, routeGetter } from "@/utils";
 import { DevProvider } from "@/client/dev";
@@ -68,13 +68,20 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
 
   const routeSetter = useCallback(
     (to: string, searchParams?: Record<string, string> | URLSearchParams) => {
+      const newSearchParams = new URLSearchParams(searchParams);
+      const urlPath = newSearchParams.toString()
+        ? `${to}?${newSearchParams.toString()}`
+        : to;
+
+      window.history.pushState(null, "", urlPath);
+
       setRoute({
         pathname: to,
-        searchParams: new URLSearchParams(searchParams),
+        searchParams: newSearchParams,
       });
       loadRoutePageModule(to);
     },
-    []
+    [loadRoutePageModule]
   );
 
   const reloadRoute = useCallback(() => {
@@ -82,6 +89,20 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
     );
   }, [route.pathname, loadRoutePageModule]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+      const url = new URL(window.location.href);
+      routeSetter(url.pathname, url.searchParams);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [loadRoutePageModule, routeSetter]);
 
   return (
     <CurrentRouteContext.Provider
