@@ -172,7 +172,9 @@ function serveHTML(pathname: string, request: masterRequest | null) {
       onError(err) {
         console.error(err);
       },
-      bootstrapModules: [`/hydrate.js`],
+      bootstrapModules: [
+        `node_modules/${PackageJson.name}/src/client/hydrate.js`,
+      ],
     }
   );
 }
