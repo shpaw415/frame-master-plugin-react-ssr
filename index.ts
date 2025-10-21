@@ -60,11 +60,14 @@ declare global {
   var __ROUTES__: Array<string>;
   var __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   var __HMR_WEBSOCKET__: Bun.Server<undefined>;
+  var __HMR_WEBSOCKET_CLIENTS__: Bun.ServerWebSocket<undefined>[];
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
     request: masterRequest | null;
   }) => JSX.Element;
 }
+
+globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
 
 let router: Router | null = null;
 
@@ -163,7 +166,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder.build(routes);
+      builder.build(routes).then(() => {
+        HMRBroadcast("reload");
+      });
     },
   } satisfies FrameMasterPlugin;
 }
@@ -200,15 +205,26 @@ function log(...data: any[]) {
   }
 }
 
+function HMRBroadcast(message: "reload") {
+  globalThis.__HMR_WEBSOCKET_CLIENTS__.forEach((client) => {
+    client.send(JSON.stringify({ type: message }));
+  });
+}
+
 function DevServer(config: Required<ReactSSRPluginOptions>) {
   globalThis.__HMR_WEBSOCKET__ ??= Bun.serve({
     port: config.devServerPort,
     websocket: {
       open(ws) {
         log("[HMR] Client connected for HMR");
+        globalThis.__HMR_WEBSOCKET_CLIENTS__.push(ws);
       },
       close(ws) {
         log("[HMR] Client disconnected from HMR");
+        globalThis.__HMR_WEBSOCKET_CLIENTS__ =
+          globalThis.__HMR_WEBSOCKET_CLIENTS__.filter(
+            (client) => client !== ws
+          );
       },
       message(ws, message) {
         log("[HMR] Message from client:", message);
@@ -218,8 +234,9 @@ function DevServer(config: Required<ReactSSRPluginOptions>) {
       const url = new URL(request.url);
 
       if (url.pathname === "/hmr") {
-        const ws = server.upgrade(request, {});
-        return new Response("welcome!");
+        return server.upgrade(request, {})
+          ? new Response("welcome!")
+          : new Response("Failed to upgrade", { status: 400 });
       }
 
       return new Response("Not Found", { status: 404 });

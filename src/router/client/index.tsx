@@ -3,12 +3,7 @@ import type { JSX } from "react";
 import { join, routeGetter } from "@/utils";
 import { DevProvider } from "@/client/dev";
 import { useRequest } from "@/hooks";
-import {
-  StackLayouts,
-  importLayouts,
-  getRelatedLayoutPaths,
-  layoutGetter,
-} from "@/router/layout";
+import { StackLayouts, layoutGetter } from "@/router/layout";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
@@ -49,7 +44,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
         path,
         "index.js"
       ) +
-      (process.env.NODE_ENV === "development"
+      (process.env.NODE_ENV != "production"
         ? `?${searchParams.toString()}`
         : "");
     const _module = (await import(url.startsWith("/") ? url : "/" + url)) as {
