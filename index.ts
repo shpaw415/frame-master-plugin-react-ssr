@@ -121,7 +121,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           });
 
         // Populate the global __ROUTES__ variable
-        globalThis.__ROUTES__ = Array.from(router.routes.keys());
+        globalThis.__ROUTES__ = Array.from(
+          router.routes.keys().map((path) => path.replace(".tsx", ".js"))
+        );
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
