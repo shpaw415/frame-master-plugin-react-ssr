@@ -1,4 +1,7 @@
-import { CurrentRouteContext } from "@/router/client";
+import {
+  CurrentRouteContext,
+  type CurrentRouteContextType,
+} from "@/router/client";
 import type { masterRequest } from "frame-master/server/request";
 import { createContext, useContext } from "react";
 
@@ -7,6 +10,6 @@ export function useRequest() {
   return useContext(requestContext);
 }
 
-export function useRoute() {
+export function useRoute(): CurrentRouteContextType {
   return useContext(CurrentRouteContext)!;
 }

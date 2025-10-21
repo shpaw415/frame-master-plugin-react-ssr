@@ -20,9 +20,13 @@ type RouteSetter = (
   searchParams?: Record<string, string> | URLSearchParams
 ) => void;
 
-export const CurrentRouteContext = createContext<
-  (currentRouteType & { navigate: RouteSetter; reload: () => void }) | null
->(null);
+export type CurrentRouteContextType = currentRouteType & {
+  navigate: RouteSetter;
+  reload: () => void;
+};
+
+export const CurrentRouteContext =
+  createContext<CurrentRouteContextType | null>(null);
 
 export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
