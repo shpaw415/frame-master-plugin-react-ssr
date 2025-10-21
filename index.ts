@@ -184,7 +184,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
-    onFileSystemChange: () => {
+    onFileSystemChange: async () => {
+      await router?.reload();
       const routes = router!
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
