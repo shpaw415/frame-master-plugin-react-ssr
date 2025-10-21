@@ -189,9 +189,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder.build(routes).then(() => {
-        HMRBroadcast("reload");
-      });
+      builder.build(routes).then(() => HMRBroadcast("update"));
     },
   } satisfies FrameMasterPlugin;
 }
@@ -228,7 +226,7 @@ function log(...data: any[]) {
   }
 }
 
-function HMRBroadcast(message: "reload") {
+function HMRBroadcast(message: "reload" | "update") {
   globalThis.__HMR_WEBSOCKET_CLIENTS__.forEach((client) => {
     client.send(JSON.stringify({ type: message }));
   });
