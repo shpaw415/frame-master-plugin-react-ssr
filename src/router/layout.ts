@@ -49,35 +49,45 @@ export function getRelatedLayoutPaths(
   basePath: string
 ): string[] {
   const relatedLayouts: string[] = [];
-  !path.startsWith("/") && (path = "/" + path);
-  const segments = path.split("/").filter(Boolean);
-  basePath = basePath.startsWith("/") ? basePath : "/" + basePath;
-  const _layouts = layouts
-    .map((layoutPath) =>
-      layoutPath.startsWith(basePath)
-        ? layoutPath.replace(basePath, "")
-        : layoutPath
-    )
-    .map((layoutPath) =>
-      layoutPath.startsWith("/") ? layoutPath : "/" + layoutPath
-    );
 
-  let currentPath = "";
+  // Normalize paths
+  const normalizedPath = path.startsWith("/") ? path : "/" + path;
+  const normalizedBasePath = basePath.startsWith("/")
+    ? basePath
+    : "/" + basePath;
+  const segments = normalizedPath.split("/").filter(Boolean);
 
-  if (segments.length === 0) {
-    const layoutRegex = new RegExp(`^/layout\\.(tsx|js)$`);
-    const matchedLayout = _layouts.find((layout) => layoutRegex.test(layout));
-    if (matchedLayout) {
-      relatedLayouts.push(matchedLayout);
+  // Normalize layout paths by removing basePath prefix
+  const normalizedLayouts = layouts.map((layoutPath) => {
+    if (layoutPath.startsWith(normalizedBasePath)) {
+      const withoutBase = layoutPath.slice(normalizedBasePath.length);
+      return withoutBase.startsWith("/") ? withoutBase : "/" + withoutBase;
     }
-    return relatedLayouts;
+    return layoutPath.startsWith("/") ? layoutPath : "/" + layoutPath;
+  });
+
+  // Helper function to escape regex special characters
+  const escapeRegex = (str: string) =>
+    str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Check for root layout
+  const rootLayoutRegex = /^\/layout\.(tsx|js)$/;
+  const rootLayout = normalizedLayouts.find((layout) =>
+    rootLayoutRegex.test(layout)
+  );
+  if (rootLayout) {
+    relatedLayouts.push(rootLayout);
   }
 
+  // Check for nested layouts
+  let currentPath = "";
   for (const segment of segments) {
-    if (currentPath.length == 0) currentPath += segment;
-    else currentPath += `/${segment}`;
-    const layoutRegex = new RegExp(`^/${currentPath}/layout\\.(tsx|js)$`);
-    const matchedLayout = _layouts.find((layout) => layoutRegex.test(layout));
+    currentPath = currentPath ? join(currentPath, segment) : segment;
+    const escapedPath = escapeRegex(currentPath);
+    const layoutRegex = new RegExp(`^/${escapedPath}/layout\\.(tsx|js)$`);
+    const matchedLayout = normalizedLayouts.find((layout) =>
+      layoutRegex.test(layout)
+    );
     if (matchedLayout) {
       relatedLayouts.push(matchedLayout);
     }
