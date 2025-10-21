@@ -81,9 +81,8 @@ class Builder {
 
   getFileFromPath(path: string): Bun.BuildArtifact | null {
     if (!this.outputs) return null;
-    const cwd = process.cwd();
     const file = this.outputs.find(
-      (output) => output.path === join(cwd, this.buildDir, path)
+      (output) => output.path === join(this.buildDir, path)
     );
     return file || null;
   }

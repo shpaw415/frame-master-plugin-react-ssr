@@ -108,7 +108,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             headers: { "Content-Type": "text/html" },
           });
         } else {
-          const res = await serveFromBuild(req.URL.pathname, builder);
+          const res = serveFromBuild(req.URL.pathname, builder);
           if (!res) return;
           req.preventGlobalValuesInjection().preventRewrite();
           req.setResponse(res, {
@@ -173,13 +173,13 @@ function serveHTML(pathname: string, request: masterRequest | null) {
         console.error(err);
       },
       bootstrapModules: [
-        `node_modules/${PackageJson.name}/src/client/hydrate.js`,
+        `/node_modules/${PackageJson.name}/src/client/hydrate.js`,
       ],
     }
   );
 }
 
-async function serveFromBuild(pathname: string, builder: Builder) {
+function serveFromBuild(pathname: string, builder: Builder) {
   return builder.getFileFromPath(pathname)?.stream() || null;
 }
 
