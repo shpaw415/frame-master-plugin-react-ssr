@@ -3,14 +3,7 @@ import type { Build_Plugins } from "./types";
 import packageJson from "../../package.json";
 import { mkdirSync, rmSync } from "fs";
 
-export const buildDir = join(
-  process.cwd(),
-  ".frame-master",
-  "build"
-) as `${string}/.frame-master/build`;
-
 const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
-  outdir: buildDir,
   minify: process.env.NODE_ENV == "production",
   splitting: true,
   entrypoints: [
@@ -33,20 +26,22 @@ const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
   env: "PUBLIC_*",
 };
 
-console.log("Default build options:", DEFAULT_BUILD_OPTIONS);
-
 type BuildProps = {
   plugins: Build_Plugins[];
   enableLogging?: boolean;
+  buildDir: string;
 };
 
 class Builder {
   plugins: Build_Plugins[];
   isLogEnabled: boolean;
+  outputs: Bun.BuildArtifact[] | null = null;
+  buildDir: string;
 
   constructor(props: BuildProps) {
     this.plugins = props.plugins;
     this.isLogEnabled = props.enableLogging ?? true;
+    this.buildDir = join(process.cwd(), props.buildDir);
   }
 
   private log(...data: any[]) {
@@ -66,7 +61,7 @@ class Builder {
     this.log("🔨 Building with merged configuration:", {
       entrypoints: buildConfig.entrypoints?.length || 0,
       plugins: buildConfig.plugins?.length || 0,
-      outdir: buildConfig.outdir,
+      outdir: this.buildDir,
     });
 
     await Promise.all(this.plugins.map((p) => p.before_build?.()));
@@ -75,11 +70,26 @@ class Builder {
 
     await Promise.all(this.plugins.map((p) => p.after_build?.(res)));
 
+    if (res.success) {
+      this.outputs = res.outputs;
+    } else {
+      this.error("Build failed with error:", res);
+    }
+
     return res;
   }
 
+  getFileFromPath(path: string): Bun.BuildArtifact | null {
+    if (!this.outputs) return null;
+    const cwd = process.cwd();
+    const file = this.outputs.find(
+      (output) => output.path === join(cwd, this.buildDir, path)
+    );
+    return file || null;
+  }
+
   async getPluginsOptions(): Promise<Bun.BuildConfig> {
-    const config = { ...DEFAULT_BUILD_OPTIONS };
+    const config = { ...DEFAULT_BUILD_OPTIONS, outdir: this.buildDir };
     const options = this.plugins
       .map((p) => p.buildOptions)
       .filter((o) => o !== undefined);
@@ -143,12 +153,12 @@ class Builder {
   }
   private clearBuildDir() {
     try {
-      rmSync(buildDir, { recursive: true, force: true });
+      rmSync(this.buildDir, { recursive: true, force: true });
     } catch (e) {
       this.error(e);
     }
     try {
-      mkdirSync(buildDir, { recursive: true });
+      mkdirSync(this.buildDir, { recursive: true });
     } catch (e) {
       this.error(e);
     }

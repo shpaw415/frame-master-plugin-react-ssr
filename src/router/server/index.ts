@@ -15,7 +15,6 @@ class Router {
   pageDir: string;
   buildDir: string;
   routes = new Map<string, RoutePage>();
-  buildRoutes = new Map<string, Bun.BunFile>();
   private cwd = process.cwd();
 
   constructor(props: RouterProps) {
@@ -26,16 +25,11 @@ class Router {
   static async createRouter(props: RouterProps): Promise<Router> {
     const router = new Router(props);
     await router._initRoutes();
-    await router._initBuildRoutes();
     return router;
   }
 
   public reload() {
-    return Promise.all([this._initRoutes(), this._initBuildRoutes()]);
-  }
-
-  public reloadBuildRoutes() {
-    return this._initBuildRoutes();
+    return Promise.all([this._initRoutes()]);
   }
 
   private async _initRoutes() {
@@ -70,19 +64,6 @@ class Router {
     if (file === "index.tsx") return "/";
     if (file === "layout.tsx") return "/";
     return "/" + file.split("/").slice(0, -1).join("/");
-  }
-  private async _initBuildRoutes() {
-    this.buildRoutes.clear();
-    const glob = await Array.fromAsync(
-      new Bun.Glob("**").scanSync({
-        cwd: this.buildDir,
-        onlyFiles: true,
-        dot: true,
-      })
-    );
-    for (const file of glob) {
-      this.buildRoutes.set(file, Bun.file(join(this.buildDir, file)));
-    }
   }
 
   getRoutePaths() {

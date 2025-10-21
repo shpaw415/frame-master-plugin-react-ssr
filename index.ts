@@ -75,17 +75,22 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const builder = new Builder({
     enableLogging: config.debug,
     plugins: [...(config.buildConfig as Build_Plugins[])] as Build_Plugins[],
+    buildDir: config.pathToBuildDir!,
   });
+
+  const { buildConfig, pathToShellFile, ...toBePublic } =
+    config as Required<ReactSSRPluginOptions>;
 
   return {
     name: "frame-master-plugin-react-ssr",
     router: {
       before_request(req) {
-        req.setGlobalValues({
-          __ROUTES__: globalThis.__ROUTES__,
-          __REACT_SSR_PLUGIN_OPTIONS__:
-            config as Required<ReactSSRPluginOptions>,
-        });
+        if (req.isAskingHTML)
+          req.setGlobalValues({
+            __ROUTES__: globalThis.__ROUTES__,
+            __REACT_SSR_PLUGIN_OPTIONS__:
+              toBePublic as Required<ReactSSRPluginOptions>,
+          });
         req.setContext<reactSSRPluginContext>({
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
@@ -103,7 +108,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             headers: { "Content-Type": "text/html" },
           });
         } else {
-          const res = await serveFromBuild(req.URL.pathname);
+          const res = await serveFromBuild(req.URL.pathname, builder);
           if (!res) return;
           req.preventGlobalValuesInjection().preventRewrite();
           req.setResponse(res, {
@@ -167,18 +172,13 @@ function serveHTML(pathname: string, request: masterRequest | null) {
       onError(err) {
         console.error(err);
       },
-      bootstrapModules: [
-        `node_modules/${PackageJson.name}/src/client/hydrate.js`,
-      ],
+      bootstrapModules: [`/hydrate.js`],
     }
   );
 }
 
-async function serveFromBuild(pathname: string) {
-  const file = router?.buildRoutes.get(pathname.slice(1));
-  if (file) {
-    return file.stream();
-  }
+async function serveFromBuild(pathname: string, builder: Builder) {
+  return builder.getFileFromPath(pathname)?.stream() || null;
 }
 
 export default createPlugin;

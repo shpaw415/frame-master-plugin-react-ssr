@@ -51,6 +51,7 @@ export function getRelatedLayoutPaths(
   const relatedLayouts: string[] = [];
   !path.startsWith("/") && (path = "/" + path);
   const segments = path.split("/").filter(Boolean);
+  basePath = basePath.startsWith("/") ? basePath : "/" + basePath;
   const _layouts = layouts
     .map((layoutPath) =>
       layoutPath.startsWith(basePath)
