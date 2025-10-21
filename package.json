@@ -14,11 +14,12 @@
   },
   "peerDependencies": {
     "typescript": "^5",
-    "frame-master": "link:frame-master"
+    "frame-master": "https://github.com/shpaw415/frame-master.git#2d04b14"
   },
   "exports": {
     "./shell": "./src/Shell.tsx",
     "./hydrate": "./src/client/hydrate.tsx",
-    "./plugin": "./index.ts"
+    "./plugin": "./index.ts",
+    "./hooks": "./src/hooks/index.ts"
   }
 }

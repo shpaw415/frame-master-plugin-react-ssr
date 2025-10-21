@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useState } from "react";
 import type { JSX } from "react";
 import { join, routeGetter } from "@/utils";
 import { DevProvider } from "@/client/dev";
@@ -20,12 +20,9 @@ type RouteSetter = (
   searchParams?: Record<string, string> | URLSearchParams
 ) => void;
 
-const CurrentRouteContext = createContext<
+export const CurrentRouteContext = createContext<
   (currentRouteType & { navigate: RouteSetter; reload: () => void }) | null
 >(null);
-export function useRoute() {
-  return useContext(CurrentRouteContext)!;
-}
 
 export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
