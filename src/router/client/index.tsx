@@ -29,41 +29,45 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
 
-  const AbortControl = new AbortController();
+  const [AbortControl, SetAbortControl] = useState(new AbortController());
 
   const request = useRequest();
-  const loadRoutePageModule = useCallback(async (path: string) => {
-    AbortControl.abort("page-change");
+  const loadRoutePageModule = useCallback(
+    async (path: string) => {
+      AbortControl.abort("page-change");
+      SetAbortControl(new AbortController());
 
-    const searchParams = new URLSearchParams();
-    searchParams.set("t", new Date().getTime().toString());
+      const searchParams = new URLSearchParams();
+      searchParams.set("t", new Date().getTime().toString());
 
-    const url =
-      join(
-        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
-        path,
-        "index.js"
-      ) +
-      (process.env.NODE_ENV != "production"
-        ? `?${searchParams.toString()}`
-        : "");
-    const _module = (await import(url.startsWith("/") ? url : "/" + url)) as {
-      default: () => JSX.Element;
-    };
-    setCurrentPageElement(
-      <StackLayouts
-        layouts={(
-          await layoutGetter(
-            path,
-            routeGetter(request),
-            globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
-          )
-        ).map((_module) => _module.default)}
-      >
-        <_module.default />
-      </StackLayouts>
-    );
-  }, []);
+      const url =
+        join(
+          globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
+          path,
+          "index.js"
+        ) +
+        (process.env.NODE_ENV != "production"
+          ? `?${searchParams.toString()}`
+          : "");
+      const _module = (await import(url.startsWith("/") ? url : "/" + url)) as {
+        default: () => JSX.Element;
+      };
+      setCurrentPageElement(
+        <StackLayouts
+          layouts={(
+            await layoutGetter(
+              path,
+              routeGetter(request),
+              globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+            )
+          ).map((_module) => _module.default)}
+        >
+          <_module.default />
+        </StackLayouts>
+      );
+    },
+    [AbortControl]
+  );
 
   const routeSetter = useCallback(
     (to: string, searchParams?: Record<string, string> | URLSearchParams) => {
