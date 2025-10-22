@@ -33,13 +33,9 @@ export function ServerSidePropsProvider({
       : globalThis.__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
   );
   const route = useRoute();
-  const onRouteChangeHandler = useCallback<
-    (props: ServerSidePropsResult) => void
-  >((props) => {
-    setProps(props);
-  }, []);
   useRouteEffect(() => {
-    fetchServerSideProps(route.pathname).then(onRouteChangeHandler);
+    setProps(null);
+    fetchServerSideProps(route.pathname).then(setProps);
   });
 
   return (
