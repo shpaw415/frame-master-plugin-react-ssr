@@ -10,7 +10,7 @@ import { join, routeGetter } from "../../utils";
 import { DevProvider } from "../../client/dev";
 import { StackLayouts, layoutGetter } from "../../router/layout";
 import { ServerSidePropsProvider } from "../../hooks/providers";
-import type { masterRequest } from "frame-master/server/request";
+import LoadingPageFallback from "../../fallbacks/loading";
 import {
   CurrentRouteContext,
   type currentRouteType,
@@ -116,7 +116,9 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>
       <DevProvider>
-        <ServerSidePropsProvider>{currentPageElement}</ServerSidePropsProvider>
+        <ServerSidePropsProvider OnLoadElement={LoadingPageFallback}>
+          {currentPageElement}
+        </ServerSidePropsProvider>
       </DevProvider>
     </CurrentRouteContext.Provider>
   );

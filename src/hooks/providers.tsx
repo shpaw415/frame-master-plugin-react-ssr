@@ -1,9 +1,10 @@
 import type { masterRequest } from "frame-master/server/request";
 import { RequestContext, ServerSidePropsContext } from "./contexts";
-import { useState, type JSX } from "react";
+import { useCallback, useState, type JSX } from "react";
 import type { ServerSidePropsResult } from "../features/serverSideProps/server";
 import { useRequest, useRoute, useRouteEffect } from ".";
 import type { reactSSRPluginContext } from "../..";
+import LoadingFallback from "../fallbacks/loading";
 
 export function RequestProvider({
   request,
@@ -21,8 +22,10 @@ export function RequestProvider({
 
 export function ServerSidePropsProvider({
   children,
+  OnLoadElement,
 }: {
   children: JSX.Element;
+  OnLoadElement: () => JSX.Element;
 }) {
   const request = useRequest();
   const [props, setProps] = useState(
@@ -31,14 +34,22 @@ export function ServerSidePropsProvider({
           .__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
       : globalThis.__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
   );
+  const [isLoading, setIsLoading] = useState(false);
   const route = useRoute();
+  const onRouteChangeHandler = useCallback<
+    (props: ServerSidePropsResult) => void
+  >((props) => {
+    setProps(props);
+    setIsLoading(false);
+  }, []);
   useRouteEffect(() => {
-    fetchServerSideProps(route.pathname).then(setProps);
+    setIsLoading(true);
+    fetchServerSideProps(route.pathname).then(onRouteChangeHandler);
   });
 
   return (
     <ServerSidePropsContext.Provider value={props}>
-      {children}
+      {isLoading ? <OnLoadElement /> : children}
     </ServerSidePropsContext.Provider>
   );
 }
