@@ -33,6 +33,8 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
 
   const request = useRequest();
   const loadRoutePageModule = useCallback(async (path: string) => {
+    AbortControl.current.abort("page-change");
+
     const searchParams = new URLSearchParams();
     searchParams.set("t", new Date().getTime().toString());
 
@@ -65,7 +67,6 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
 
   const routeSetter = useCallback(
     (to: string, searchParams?: Record<string, string> | URLSearchParams) => {
-      AbortControl.current.abort();
       const newSearchParams = new URLSearchParams(searchParams);
       const urlPath = newSearchParams.toString()
         ? `${to}?${newSearchParams.toString()}`
@@ -85,7 +86,6 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   );
 
   const reloadRoute = useCallback(() => {
-    AbortControl.current.abort();
     loadRoutePageModule(
       route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
     );
