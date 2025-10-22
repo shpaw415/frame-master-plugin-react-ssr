@@ -29,11 +29,11 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
 
-  const AbortControl = useRef(new AbortController());
+  const AbortControl = new AbortController();
 
   const request = useRequest();
   const loadRoutePageModule = useCallback(async (path: string) => {
-    AbortControl.current.abort("page-change");
+    AbortControl.abort("page-change");
 
     const searchParams = new URLSearchParams();
     searchParams.set("t", new Date().getTime().toString());
@@ -121,7 +121,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>
       <DevProvider>
-        <ServerSidePropsProvider abortController={AbortControl.current}>
+        <ServerSidePropsProvider abortController={AbortControl}>
           {currentPageElement}
         </ServerSidePropsProvider>
       </DevProvider>
