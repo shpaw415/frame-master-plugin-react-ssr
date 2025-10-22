@@ -4,17 +4,11 @@ import {
   CurrentRouteContext,
   type CurrentRouteContextType,
 } from "../router/client";
-import type { masterRequest } from "frame-master/server/request";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  type EffectCallback,
-} from "react";
+import { RequestContext } from "../router/client";
+import { useContext, useEffect, type EffectCallback } from "react";
 
-export const requestContext = createContext<masterRequest | null>(null);
 export function useRequest() {
-  return useContext(requestContext);
+  return useContext(RequestContext);
 }
 
 export function useRoute(): CurrentRouteContextType {
