@@ -214,7 +214,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .map((route) => join(router?.pageDir!, route));
 
       builder.build(routes).then(() => {
-        directiveManager.clearPaths();
         HMRBroadcast("update");
       });
     },

@@ -63,6 +63,7 @@ class Builder {
 
   async build(entrypoints: string[]) {
     this.clearBuildDir();
+    if (process.env.NODE_ENV != "production") directiveManager.clearPaths();
     const buildConfig = await this.getPluginsOptions();
 
     buildConfig.entrypoints = [...buildConfig.entrypoints, ...entrypoints];
