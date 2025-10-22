@@ -43,7 +43,7 @@ class Builder {
   cwd = process.cwd();
 
   constructor(props: BuildProps) {
-    this.plugins = props.plugins;
+    this.plugins = [...props.plugins, ...this.defaultTransformPlugin()];
     this.isLogEnabled = props.enableLogging ?? true;
     this.buildDir = join(process.cwd(), props.buildDir);
     this.srcDir = join(process.cwd(), props.srcDir);
@@ -157,6 +157,30 @@ class Builder {
         );
       },
     };
+  }
+
+  private defaultTransformPlugin(): BuildProps["plugins"] {
+    return [
+      {
+        partialPluginOverRide: {
+          tsx(args, fileContent, fileDirectives) {
+            return {
+              contents: new Bun.Transpiler({
+                exports: {
+                  eliminate: ["getServerSideProps"],
+                },
+                deadCodeElimination: false,
+                autoImportJSX: false,
+                trimUnusedImports: false,
+                treeShaking: false,
+                loader: "tsx",
+              }).transformSync(fileContent),
+              loader: "js",
+            };
+          },
+        },
+      },
+    ];
   }
 
   private async jsFileHandler({
