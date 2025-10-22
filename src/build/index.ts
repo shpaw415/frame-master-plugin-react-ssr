@@ -167,11 +167,9 @@ class Builder {
                 exports: {
                   eliminate: ["getServerSideProps"],
                 },
-                deadCodeElimination: false,
-                autoImportJSX: false,
+                loader: args.loader as "tsx",
                 trimUnusedImports: false,
                 treeShaking: false,
-                loader: args.loader as "tsx",
               }).transformSync(fileContent),
               loader: "js",
             };
