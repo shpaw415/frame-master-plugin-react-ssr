@@ -79,6 +79,7 @@ let router: Router | null = null;
 export type reactSSRPluginContext = {
   __ROUTES__: Array<string>;
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
+  __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
 };
 
 /**
@@ -102,20 +103,20 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     priority: config.priority,
     router: {
       async before_request(req) {
+        const SSP = await getServerSideProps(req, router!);
         if (req.isAskingHTML) {
-          const SSP = await getServerSideProps(req, router!);
           req.setGlobalValues({
             __ROUTES__: globalThis.__ROUTES__,
             __REACT_SSR_PLUGIN_OPTIONS__:
               toBePublic as Required<ReactSSRPluginOptions>,
             __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: SSP,
           });
-          req.setContext<ServerSidePropsContext>({ props: SSP });
         }
         req.setContext<reactSSRPluginContext>({
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
             config as Required<ReactSSRPluginOptions>,
+          __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: SSP,
         });
       },
       async request(req) {
@@ -137,6 +138,15 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           req.setResponse(res, {
             headers: { "Content-Type": "text/html" },
           });
+        } else if (req.request.headers.get("x-server-side-props")) {
+          req
+            .setResponse(
+              JSON.stringify(
+                req.getContext<reactSSRPluginContext>()
+                  .__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__ || null
+              )
+            )
+            .sendNow();
         } else {
           const res = serveFromBuild(req.URL.pathname, builder);
           if (!res) return;

@@ -9,6 +9,7 @@ export type getServerSidePropsFunctionType = (
 
 export type ServerSidePropsResult =
   | Record<string, unknown>
+  | null
   | undefined
   | { redirect: string };
 
@@ -19,15 +20,17 @@ export type ServerSidePropsContext = {
 export function getServerSideProps(
   request: masterRequest,
   router: Router
-): ServerSidePropsResult | Promise<ServerSidePropsResult> | undefined {
+): ServerSidePropsResult | Promise<ServerSidePropsResult> | null {
   if (
     !request.request.headers.get("x-server-side-props") &&
     !request.isAskingHTML
   )
-    return;
-  return router
-    .getPageModuleByPathname<{
-      getServerSideProps?: getServerSidePropsFunctionType;
-    }>(request.URL.pathname)
-    ?.getServerSideProps?.(request);
+    return null;
+  return (
+    router
+      .getPageModuleByPathname<{
+        getServerSideProps?: getServerSidePropsFunctionType;
+      }>(request.URL.pathname)
+      ?.getServerSideProps?.(request) ?? null
+  );
 }

@@ -26,16 +26,14 @@ export default function Shell({ children, request }: ShellProps) {
 
   return (
     <RequestProvider req={request}>
-      <ServerSidePropsProvider>
-        <RouterHost
-          initialPath={{
-            pathname: initialPathname,
-            searchParams: initialSearchParams,
-          }}
-        >
-          {children}
-        </RouterHost>
-      </ServerSidePropsProvider>
+      <RouterHost
+        initialPath={{
+          pathname: initialPathname,
+          searchParams: initialSearchParams,
+        }}
+      >
+        {children}
+      </RouterHost>
     </RequestProvider>
   );
 }

@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { join } from "path";
 import { getRelatedLayoutPaths } from "../layout";
 
-type RoutePage = { default: () => JSX.Element };
+type RoutePage = { default: () => JSX.Element } & Record<string, unknown>;
 
 const AUTHORIZED_ROUTE_NAMES = ["index.tsx", "layout.tsx"];
 
@@ -48,14 +48,12 @@ class Router {
       glob.map(async (file) => {
         const _module = (await import(
           join(this.cwd, this.pageDir, file) + suffix
-        )) as {
-          default: RoutePage;
-        };
-        return { path: file, default: _module.default };
+        )) as RoutePage;
+        return { path: file, exports: _module };
       })
     );
     for (const exp of exports) {
-      this.registerRoute(exp.path, exp.default);
+      this.registerRoute(exp.path, exp.exports);
     }
   }
   fileToRoutePath(file: string) {
@@ -67,15 +65,11 @@ class Router {
   getRoutePaths() {
     return Array.from(this.routes.keys());
   }
-  getFromRoutePath<RoutePageExports extends Record<string, unknown>>(
+  getFromRoutePath(
     path: string
-  ):
-    | { page: RoutePage & RoutePageExports; layouts: Array<RoutePage> }
-    | undefined {
-    const searchPage = join(path, "index.tsx");
-    const page = this.routes.get(
-      searchPage.startsWith("/") ? searchPage.slice(1) : searchPage
-    );
+  ): { page: RoutePage; layouts: Array<RoutePage> } | undefined {
+    const page = this.getPageModuleByPathname(path);
+    if (!page) return undefined;
     const layoutsPaths = Array.from(this.routes.entries())
       .map(([k, v]) => k)
       .filter((k) => k.endsWith("layout.tsx"));
@@ -89,9 +83,10 @@ class Router {
       (path) => this.routes.get(path)!
     );
 
-    return page
-      ? { page: page as RoutePage & RoutePageExports, layouts: ralatedLayouts }
-      : undefined;
+    return {
+      page,
+      layouts: ralatedLayouts,
+    };
   }
   getPageModuleByPathname<Exports extends Record<string, unknown>>(
     pathname: string

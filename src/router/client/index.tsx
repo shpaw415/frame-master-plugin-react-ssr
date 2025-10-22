@@ -1,9 +1,16 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { JSX } from "react";
 import { join, routeGetter } from "@/utils";
 import { DevProvider } from "@/client/dev";
 import { useRequest } from "@/hooks";
 import { StackLayouts, layoutGetter } from "@/router/layout";
+import { ServerSidePropsProvider } from "@/features/serverSideProps/client";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
@@ -23,6 +30,9 @@ type RouteSetter = (
 export type CurrentRouteContextType = currentRouteType & {
   navigate: RouteSetter;
   reload: () => void;
+  isInitial: boolean;
+  /** increment every time navigate or reload is triggered */
+  version: number;
 };
 
 export const CurrentRouteContext =
@@ -32,6 +42,8 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
   const [currentPageElement, setCurrentPageElement] =
     useState<JSX.Element>(children);
+  const [isInitialRoute, setIsInitialRoute] = useState(true);
+  const [routeVersion, setRouteVersion] = useState(0);
 
   const request = useRequest();
 
@@ -79,6 +91,8 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
         pathname: to,
         searchParams: newSearchParams,
       });
+      setIsInitialRoute(false);
+      setRouteVersion((c) => c++);
       loadRoutePageModule(to);
     },
     [loadRoutePageModule]
@@ -88,6 +102,8 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     loadRoutePageModule(
       route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
     );
+    setIsInitialRoute(false);
+    setRouteVersion((c) => c++);
   }, [route.pathname, loadRoutePageModule]);
 
   useEffect(() => {
@@ -104,11 +120,22 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     };
   }, [loadRoutePageModule, routeSetter]);
 
+  const RouteContextMemo = useMemo(
+    () => ({
+      ...route,
+      navigate: routeSetter,
+      reload: reloadRoute,
+      isInitial: isInitialRoute,
+      version: routeVersion,
+    }),
+    [routeSetter, reloadRoute, route, isInitialRoute, routeVersion]
+  );
+
   return (
-    <CurrentRouteContext.Provider
-      value={{ ...route, navigate: routeSetter, reload: reloadRoute }}
-    >
-      <DevProvider>{currentPageElement}</DevProvider>
+    <CurrentRouteContext.Provider value={RouteContextMemo}>
+      <DevProvider>
+        <ServerSidePropsProvider>{currentPageElement}</ServerSidePropsProvider>
+      </DevProvider>
     </CurrentRouteContext.Provider>
   );
 }
