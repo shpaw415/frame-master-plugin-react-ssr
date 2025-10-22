@@ -1,9 +1,7 @@
 import { createContext, type JSX, useState } from "react";
-import type {
-  ServerSidePropsContext as RequestSSPContext,
-  ServerSidePropsResult,
-} from "./server";
+import type { ServerSidePropsResult } from "./server";
 import { useRequest, useRoute, useRouteEffect } from "../../hooks";
+import type { reactSSRPluginContext } from "../../..";
 
 export const ServerSidePropsContext =
   createContext<ServerSidePropsResult>(undefined);
@@ -16,7 +14,8 @@ export function ServerSidePropsProvider({
   const request = useRequest();
   const [props, setProps] = useState(
     request
-      ? request.getContext<RequestSSPContext>().props
+      ? request.getContext<reactSSRPluginContext>()
+          .__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
       : globalThis.__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
   );
   const route = useRoute();
