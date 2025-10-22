@@ -12,7 +12,6 @@ import {
   getServerSideProps,
   type ServerSidePropsResult,
 } from "./src/features/serverSideProps/server";
-import { directiveManager } from "frame-master/utils";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",

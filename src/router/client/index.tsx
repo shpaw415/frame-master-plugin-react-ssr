@@ -36,7 +36,9 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const loadRoutePageModule = useCallback(
     async (path: string) => {
       // Abort any previous ongoing navigation
-      abortControllerRef.current.abort();
+      try {
+        abortControllerRef.current.abort();
+      } catch {}
       // Create a new controller for this navigation
       const newController = new AbortController();
       abortControllerRef.current = newController;
@@ -66,25 +68,32 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
           return;
         }
 
+        const layouts = await layoutGetter(
+          path,
+          routeGetter(request),
+          globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+        );
+
+        // Check again after async operation
+        if (newController.signal.aborted) {
+          return;
+        }
+
         setCurrentPageElement(
-          <StackLayouts
-            layouts={(
-              await layoutGetter(
-                path,
-                routeGetter(request),
-                globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
-              )
-            ).map((_module) => _module.default)}
-          >
+          <StackLayouts layouts={layouts.map((_module) => _module.default)}>
             <_module.default />
           </StackLayouts>
         );
       } catch (error) {
-        // Handle abort or other errors
-        if (newController.signal.aborted) {
-          console.log("Navigation aborted");
+        // Silently ignore abort errors
+        if (error instanceof Error && error.name === "AbortError") {
           return;
         }
+        // Check if it was aborted
+        if (newController.signal.aborted) {
+          return;
+        }
+        // Re-throw other errors
         throw error;
       }
     },
