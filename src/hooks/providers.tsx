@@ -22,10 +22,8 @@ export function RequestProvider({
 
 export function ServerSidePropsProvider({
   children,
-  OnLoadElement,
 }: {
   children: JSX.Element;
-  OnLoadElement: () => JSX.Element;
 }) {
   const request = useRequest();
   const [props, setProps] = useState(
@@ -34,22 +32,19 @@ export function ServerSidePropsProvider({
           .__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
       : globalThis.__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
   );
-  const [isLoading, setIsLoading] = useState(false);
   const route = useRoute();
   const onRouteChangeHandler = useCallback<
     (props: ServerSidePropsResult) => void
   >((props) => {
     setProps(props);
-    setIsLoading(false);
   }, []);
   useRouteEffect(() => {
-    setIsLoading(true);
     fetchServerSideProps(route.pathname).then(onRouteChangeHandler);
   });
 
   return (
     <ServerSidePropsContext.Provider value={props}>
-      {isLoading ? <OnLoadElement /> : children}
+      {children}
     </ServerSidePropsContext.Provider>
   );
 }

@@ -27,7 +27,9 @@ export function useRouteEffect(onRouteChange: EffectCallback) {
   }, [route.version]);
 }
 
-export function useServerSideProps<AwaitedResult extends unknown = {}>() {
+export function useServerSideProps<
+  AwaitedResult extends unknown = {}
+>(): Partial<ServerSidePropsResult & AwaitedResult> {
   const serversideProps = useContext(
     ServerSidePropsContext
   ) as ServerSidePropsResult & AwaitedResult;
