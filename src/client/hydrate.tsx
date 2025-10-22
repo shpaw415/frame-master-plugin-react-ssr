@@ -10,6 +10,17 @@ import Shell from "../Shell";
 import type { JSX } from "react";
 import { join } from "../utils";
 import { layoutGetter, StackLayouts } from "../router/layout";
+import { jsxDEV } from "react/jsx-dev-runtime";
+
+declare global {
+  var jsxDEV_7x81h0kn: typeof jsxDEV;
+}
+
+function initGlobals() {
+  globalThis.jsxDEV_7x81h0kn = jsxDEV;
+}
+
+initGlobals();
 
 async function start() {
   const url = new URL(window.location.href);

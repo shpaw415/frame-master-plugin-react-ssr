@@ -40,7 +40,6 @@ class Builder {
   outputs: Bun.BuildArtifact[] | null = null;
   buildDir: string;
   srcDir: string;
-  cwd = process.cwd();
 
   constructor(props: BuildProps) {
     this.plugins = [...props.plugins, ...this.defaultTransformPlugin()];
@@ -56,10 +55,9 @@ class Builder {
 
   pluginRegexMake({ path, ext }: { path: string[]; ext: string[] }) {
     return new RegExp(
-      `^${join(this.cwd, ...path).replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-      )}.*\\.(${ext.join("|")})$`
+      `^${join(...path).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*\\.(${ext.join(
+        "|"
+      )})$`
     );
   }
 
