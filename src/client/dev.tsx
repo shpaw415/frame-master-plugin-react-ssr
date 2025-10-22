@@ -7,10 +7,13 @@ export function DevProvider({ children }: { children: React.ReactNode }) {
   const router = useRoute();
   const ws = useRef<null | WebSocket>(null);
   useEffect(() => {
-    ws.current = new WebSocket(
+    if (process.env.NODE_ENV == "production") return;
+
+    ws.current ??= new WebSocket(
       `${location.protocol == "http:" ? "ws" : "wss"}://${location.host}/hmr`
     );
-    ws.current.addEventListener("message", (event) => {
+
+    const eventHandler: (ev: MessageEvent<any>) => any = (event) => {
       const data = JSON.parse(event.data) as {
         type: "reload" | "update";
       };
@@ -22,10 +25,15 @@ export function DevProvider({ children }: { children: React.ReactNode }) {
 
       if (data.type === "update") {
         console.log("[HMR] Updating route:", router.pathname);
-        router.navigate(router.pathname, router.searchParams);
+        router.reload();
       }
-    });
-  }, []);
+    };
+
+    ws.current.addEventListener("message", eventHandler);
+    return () => {
+      ws.current?.removeEventListener("message", eventHandler);
+    };
+  }, [router.pathname, router.reload]);
   return (
     <DevContext.Provider value={{ ws: ws.current! }}>
       {children}
