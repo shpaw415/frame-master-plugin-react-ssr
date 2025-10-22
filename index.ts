@@ -14,7 +14,6 @@ import {
 } from "./src/features/serverSideProps/server";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
-  process.cwd(),
   "node_modules",
   PackageJson.name
 ) as `<cwd>/node_modules/${string}`;
@@ -196,7 +195,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
         // Load the shell component
         globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
-          await import(config.pathToShellFile as string)
+          await import(join(process.cwd(), config.pathToShellFile as string))
         ).default;
 
         const routes = router
