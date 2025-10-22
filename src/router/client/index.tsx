@@ -37,7 +37,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     async (path: string) => {
       // Abort any previous ongoing navigation
       try {
-        abortControllerRef.current.abort();
+        abortControllerRef.current.abort("page-change");
       } catch {}
       // Create a new controller for this navigation
       const newController = new AbortController();
