@@ -93,7 +93,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
         searchParams: newSearchParams,
       });
       setIsInitialRoute(false);
-      setRouteVersion((c) => c++);
+      setRouteVersion((c) => c + 1);
       loadRoutePageModule(to);
     },
     [loadRoutePageModule]
@@ -104,7 +104,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
     );
     setIsInitialRoute(false);
-    setRouteVersion((c) => c++);
+    setRouteVersion((c) => c + 1);
   }, [route.pathname, loadRoutePageModule]);
 
   useEffect(() => {
