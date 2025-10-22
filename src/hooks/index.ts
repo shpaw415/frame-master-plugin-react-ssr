@@ -26,7 +26,10 @@ export function useRouteEffect(onRouteChange: EffectCallback) {
     return onRouteChange();
   }, [route.version]);
 }
-
+/**
+ * null when loading or if there is no serverSideProps
+ * @returns null | serverSideProps
+ */
 export function useServerSideProps<
   AwaitedResult extends unknown = {}
 >(): Partial<ServerSidePropsResult & AwaitedResult> | null {

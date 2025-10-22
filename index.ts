@@ -12,6 +12,7 @@ import {
   getServerSideProps,
   type ServerSidePropsResult,
 } from "./src/features/serverSideProps/server";
+import { directiveManager } from "frame-master/utils";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -212,7 +213,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder.build(routes).then(() => HMRBroadcast("update"));
+      builder.build(routes).then(() => {
+        directiveManager.clearPaths();
+        HMRBroadcast("update");
+      });
     },
   } satisfies FrameMasterPlugin;
 }
