@@ -9,49 +9,26 @@ import type { JSX } from "react";
 import { join, routeGetter } from "../../utils";
 import { DevProvider } from "../../client/dev";
 import { StackLayouts, layoutGetter } from "../../router/layout";
-import { ServerSidePropsProvider } from "../../features/serverSideProps/client";
+import { ServerSidePropsProvider } from "../../hooks/providers";
 import type { masterRequest } from "frame-master/server/request";
+import {
+  CurrentRouteContext,
+  type currentRouteType,
+} from "../../hooks/contexts";
+import { useRequest } from "../../hooks";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
   children: JSX.Element;
-  request: masterRequest | null;
 };
 
-type currentRouteType = {
-  pathname: string;
-  searchParams: URLSearchParams;
-};
-
-type RouteSetter = (
-  to: string,
-  searchParams?: Record<string, string> | URLSearchParams
-) => void;
-
-export type CurrentRouteContextType = currentRouteType & {
-  navigate: RouteSetter;
-  reload: () => void;
-  isInitial: boolean;
-  /** increment every time navigate or reload is triggered */
-  version: number;
-};
-
-export const CurrentRouteContext = createContext<CurrentRouteContextType>(
-  null as any
-);
-export const RequestContext = createContext<masterRequest | null>(null);
-
-export function RouterHost({
-  initialPath,
-  children,
-  request,
-}: RouterHostParams) {
+export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
   const [currentPageElement, setCurrentPageElement] =
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
-
+  const request = useRequest();
   const loadRoutePageModule = useCallback(async (path: string) => {
     const searchParams = new URLSearchParams();
     searchParams.set("t", new Date().getTime().toString());
@@ -137,14 +114,10 @@ export function RouterHost({
   );
 
   return (
-    <RequestContext.Provider value={request}>
-      <CurrentRouteContext.Provider value={RouteContextMemo}>
-        <DevProvider>
-          <ServerSidePropsProvider>
-            {currentPageElement}
-          </ServerSidePropsProvider>
-        </DevProvider>
-      </CurrentRouteContext.Provider>
-    </RequestContext.Provider>
+    <CurrentRouteContext.Provider value={RouteContextMemo}>
+      <DevProvider>
+        <ServerSidePropsProvider>{currentPageElement}</ServerSidePropsProvider>
+      </DevProvider>
+    </CurrentRouteContext.Provider>
   );
 }

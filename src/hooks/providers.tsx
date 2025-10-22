@@ -1,10 +1,23 @@
-import { createContext, type JSX, useState } from "react";
-import type { ServerSidePropsResult } from "./server";
-import { useRequest, useRoute, useRouteEffect } from "../../hooks";
-import type { reactSSRPluginContext } from "../../..";
+import type { masterRequest } from "frame-master/server/request";
+import { RequestContext, ServerSidePropsContext } from "./contexts";
+import { useState, type JSX } from "react";
+import type { ServerSidePropsResult } from "../features/serverSideProps/server";
+import { useRequest, useRoute, useRouteEffect } from ".";
+import type { reactSSRPluginContext } from "../..";
 
-export const ServerSidePropsContext =
-  createContext<ServerSidePropsResult>(undefined);
+export function RequestProvider({
+  request,
+  children,
+}: {
+  request: masterRequest | null;
+  children: JSX.Element;
+}) {
+  return (
+    <RequestContext.Provider value={request}>
+      {children}
+    </RequestContext.Provider>
+  );
+}
 
 export function ServerSidePropsProvider({
   children,

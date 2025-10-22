@@ -1,10 +1,10 @@
-import { ServerSidePropsContext } from "../features/serverSideProps/client";
+import { ServerSidePropsContext } from "./contexts";
 import type { ServerSidePropsResult } from "../features/serverSideProps/server";
 import {
+  RequestContext,
   CurrentRouteContext,
   type CurrentRouteContextType,
-} from "../router/client";
-import { RequestContext } from "../router/client";
+} from "./contexts";
 import { useContext, useEffect, type EffectCallback } from "react";
 
 export function useRequest() {
@@ -12,7 +12,7 @@ export function useRequest() {
 }
 
 export function useRoute(): CurrentRouteContextType {
-  return useContext(CurrentRouteContext) as CurrentRouteContextType;
+  return useContext(CurrentRouteContext);
 }
 
 /**

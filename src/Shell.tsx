@@ -2,6 +2,7 @@ import type { masterRequest } from "frame-master/server/request";
 import { RouterHost } from "./router/client";
 import type { JSX } from "react";
 import { useMemo } from "react";
+import { RequestProvider, ServerSidePropsProvider } from "./hooks/providers";
 
 type ShellProps = {
   children: JSX.Element;
@@ -23,14 +24,17 @@ export default function Shell({ children, request }: ShellProps) {
   }, []);
 
   return (
-    <RouterHost
-      initialPath={{
-        pathname: initialPathname,
-        searchParams: initialSearchParams,
-      }}
-      request={request}
-    >
-      {children}
-    </RouterHost>
+    <RequestProvider request={request}>
+      <ServerSidePropsProvider>
+        <RouterHost
+          initialPath={{
+            pathname: initialPathname,
+            searchParams: initialSearchParams,
+          }}
+        >
+          {children}
+        </RouterHost>
+      </ServerSidePropsProvider>
+    </RequestProvider>
   );
 }
