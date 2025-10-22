@@ -173,7 +173,7 @@ class Builder {
                 autoImportJSX: false,
                 trimUnusedImports: false,
                 treeShaking: false,
-                loader: "tsx",
+                loader: args.loader as "tsx",
               }).transformSync(fileContent),
               loader: "js",
             };
