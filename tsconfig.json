@@ -26,7 +26,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
-      "@/*": ["./src/*"],
       "frame-master-plugin-react-ssr/shell": ["./src/Shell.tsx"]
     }
   },

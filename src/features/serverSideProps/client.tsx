@@ -3,7 +3,7 @@ import type {
   ServerSidePropsContext as RequestSSPContext,
   ServerSidePropsResult,
 } from "./server";
-import { useRequest, useRoute, useRouteEffect } from "@/hooks";
+import { useRequest, useRoute, useRouteEffect } from "../../hooks";
 
 export const ServerSidePropsContext =
   createContext<ServerSidePropsResult>(undefined);

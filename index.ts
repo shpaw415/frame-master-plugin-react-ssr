@@ -1,18 +1,17 @@
-import Router from "@/router/server";
+import Router from "./src/router/server";
 import type { FrameMasterPlugin } from "frame-master/plugin/types";
 import type { masterRequest } from "frame-master/server/request";
 import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import { StackLayouts } from "@/router/layout";
-import { Builder } from "@/build";
+import { StackLayouts } from "./src/router/layout";
+import { Builder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import {
   getServerSideProps,
-  type ServerSidePropsContext,
   type ServerSidePropsResult,
-} from "@/features/serverSideProps/server";
+} from "./src/features/serverSideProps/server";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   process.cwd(),

@@ -1,9 +1,9 @@
-import { ServerSidePropsContext } from "@/features/serverSideProps/client";
-import type { ServerSidePropsResult } from "@/features/serverSideProps/server";
+import { ServerSidePropsContext } from "../features/serverSideProps/client";
+import type { ServerSidePropsResult } from "../features/serverSideProps/server";
 import {
   CurrentRouteContext,
   type CurrentRouteContextType,
-} from "@/router/client";
+} from "../router/client";
 import type { masterRequest } from "frame-master/server/request";
 import {
   createContext,
@@ -18,7 +18,7 @@ export function useRequest() {
 }
 
 export function useRoute(): CurrentRouteContextType {
-  return useContext(CurrentRouteContext)!;
+  return useContext(CurrentRouteContext) as CurrentRouteContextType;
 }
 
 /**

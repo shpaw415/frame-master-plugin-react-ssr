@@ -6,11 +6,11 @@ import {
   useState,
 } from "react";
 import type { JSX } from "react";
-import { join, routeGetter } from "@/utils";
-import { DevProvider } from "@/client/dev";
-import { useRequest } from "@/hooks";
-import { StackLayouts, layoutGetter } from "@/router/layout";
-import { ServerSidePropsProvider } from "@/features/serverSideProps/client";
+import { join, routeGetter } from "../../utils";
+import { DevProvider } from "../../client/dev";
+import { useRequest } from "../../hooks";
+import { StackLayouts, layoutGetter } from "../../router/layout";
+import { ServerSidePropsProvider } from "../../features/serverSideProps/client";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
@@ -35,8 +35,9 @@ export type CurrentRouteContextType = currentRouteType & {
   version: number;
 };
 
-export const CurrentRouteContext =
-  createContext<CurrentRouteContextType | null>(null);
+export const CurrentRouteContext = createContext<CurrentRouteContextType>(
+  null as any
+);
 
 export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
