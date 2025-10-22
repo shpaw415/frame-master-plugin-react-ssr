@@ -35,7 +35,6 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const loadRoutePageModule = useCallback(
     async (path: string) => {
       AbortControl.abort("page-change");
-      SetAbortControl(new AbortController());
 
       const searchParams = new URLSearchParams();
       searchParams.set("t", new Date().getTime().toString());
@@ -85,6 +84,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       setIsInitialRoute(false);
       setRouteVersion((c) => c + 1);
       loadRoutePageModule(to);
+      SetAbortControl(new AbortController());
     },
     [loadRoutePageModule]
   );
