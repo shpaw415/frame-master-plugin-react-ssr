@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { join } from "path";
 import { getRelatedLayoutPaths } from "../layout";
 
-type RoutePage = () => JSX.Element;
+type RoutePage = { default: () => JSX.Element };
 
 const AUTHORIZED_ROUTE_NAMES = ["index.tsx", "layout.tsx"];
 
@@ -67,9 +67,11 @@ class Router {
   getRoutePaths() {
     return Array.from(this.routes.keys());
   }
-  getFromRoutePath(
+  getFromRoutePath<RoutePageExports extends Record<string, unknown>>(
     path: string
-  ): { page: RoutePage; layouts: Array<RoutePage> } | undefined {
+  ):
+    | { page: RoutePage & RoutePageExports; layouts: Array<RoutePage> }
+    | undefined {
     const searchPage = join(path, "index.tsx");
     const page = this.routes.get(
       searchPage.startsWith("/") ? searchPage.slice(1) : searchPage
@@ -87,7 +89,18 @@ class Router {
       (path) => this.routes.get(path)!
     );
 
-    return page ? { page, layouts: ralatedLayouts } : undefined;
+    return page
+      ? { page: page as RoutePage & RoutePageExports, layouts: ralatedLayouts }
+      : undefined;
+  }
+  getPageModuleByPathname<Exports extends Record<string, unknown>>(
+    pathname: string
+  ): (RoutePage & Exports) | undefined {
+    const searchPage = join(pathname, "index.tsx");
+    const page = this.routes.get(
+      searchPage.startsWith("/") ? searchPage.slice(1) : searchPage
+    );
+    return page as (RoutePage & Exports) | undefined;
   }
 
   registerRoute(path: string, page: RoutePage) {

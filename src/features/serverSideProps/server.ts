@@ -1,6 +1,5 @@
 import type { masterRequest } from "frame-master/server/request";
-import { join } from "path";
-import type { ReactSSRPluginOptions } from "../../..";
+import Router from "@/router/server";
 
 const cwd = process.cwd();
 
@@ -17,14 +16,18 @@ export type ServerSidePropsContext = {
   props: ServerSidePropsResult;
 };
 
-export async function getServerSideProps(
+export function getServerSideProps(
   request: masterRequest,
-  config: ReactSSRPluginOptions
-): Promise<ServerSidePropsResult> {
-  if (!request.request.headers.get("x-server-side-props")) return;
-  const { getServerSideProps } = (await import(
-    join(cwd, config.pathToPagesDir!, request.URL.pathname)
-  )) as { getServerSideProps?: getServerSidePropsFunctionType };
-
-  return await getServerSideProps?.(request);
+  router: Router
+): ServerSidePropsResult | Promise<ServerSidePropsResult> | undefined {
+  if (
+    !request.request.headers.get("x-server-side-props") &&
+    !request.isAskingHTML
+  )
+    return;
+  return router
+    .getPageModuleByPathname<{
+      getServerSideProps?: getServerSidePropsFunctionType;
+    }>(request.URL.pathname)
+    ?.getServerSideProps?.(request);
 }

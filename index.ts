@@ -42,6 +42,8 @@ export type ReactSSRPluginOptions = {
   buildConfig?: Build_Plugins[];
   /** WebSocket Dev Server for HMR reloading client side */
   devServerPort: number;
+  /** plugin priority for fireing order */
+  priority?: number;
 };
 
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
@@ -51,6 +53,7 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   debug: false,
   buildConfig: [],
   devServerPort: 3001,
+  priority: 10,
 };
 
 declare global {
@@ -62,7 +65,7 @@ declare global {
   var __ROUTES__: Array<string>;
   var __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   var __HMR_WEBSOCKET_CLIENTS__: Bun.ServerWebSocket<undefined>[];
-  var __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS: ServerSidePropsResult;
+  var __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
     request: masterRequest | null;
@@ -96,15 +99,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   return {
     name: "frame-master-plugin-react-ssr",
+    priority: config.priority,
     router: {
       async before_request(req) {
         if (req.isAskingHTML) {
-          const SSP = await getServerSideProps(req, config);
+          const SSP = await getServerSideProps(req, router!);
           req.setGlobalValues({
             __ROUTES__: globalThis.__ROUTES__,
             __REACT_SSR_PLUGIN_OPTIONS__:
               toBePublic as Required<ReactSSRPluginOptions>,
-            __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS: SSP,
+            __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: SSP,
           });
           req.setContext<ServerSidePropsContext>({ props: SSP });
         }
@@ -213,7 +217,10 @@ function serveHTML(pathname: string, request: masterRequest | null) {
 
   return renderToReadableStream(
     globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__({
-      children: StackLayouts({ children: page.page(), layouts: page.layouts }),
+      children: StackLayouts({
+        children: page.page.default(),
+        layouts: page.layouts.map((l) => l.default),
+      }),
       request,
     }),
     {
