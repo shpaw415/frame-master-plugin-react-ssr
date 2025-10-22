@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { JSX } from "react";
@@ -27,6 +28,9 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
+
+  const AbortControl = useRef(new AbortController());
+
   const request = useRequest();
   const loadRoutePageModule = useCallback(async (path: string) => {
     const searchParams = new URLSearchParams();
@@ -61,6 +65,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
 
   const routeSetter = useCallback(
     (to: string, searchParams?: Record<string, string> | URLSearchParams) => {
+      AbortControl.current.abort();
       const newSearchParams = new URLSearchParams(searchParams);
       const urlPath = newSearchParams.toString()
         ? `${to}?${newSearchParams.toString()}`
@@ -80,6 +85,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   );
 
   const reloadRoute = useCallback(() => {
+    AbortControl.current.abort();
     loadRoutePageModule(
       route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
     );
@@ -115,7 +121,9 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>
       <DevProvider>
-        <ServerSidePropsProvider>{currentPageElement}</ServerSidePropsProvider>
+        <ServerSidePropsProvider abortController={AbortControl.current}>
+          {currentPageElement}
+        </ServerSidePropsProvider>
       </DevProvider>
     </CurrentRouteContext.Provider>
   );

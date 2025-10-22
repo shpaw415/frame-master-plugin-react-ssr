@@ -21,8 +21,10 @@ export function RequestProvider({
 
 export function ServerSidePropsProvider({
   children,
+  abortController,
 }: {
   children: JSX.Element;
+  abortController: AbortController;
 }) {
   const request = useRequest();
   const [props, setProps] = useState(
@@ -34,7 +36,7 @@ export function ServerSidePropsProvider({
   const route = useRoute();
   useRouteEffect(() => {
     setProps(null);
-    fetchServerSideProps(route.pathname).then(setProps);
+    fetchServerSideProps(route.pathname, abortController).then(setProps);
   });
 
   return (
@@ -44,11 +46,12 @@ export function ServerSidePropsProvider({
   );
 }
 
-function fetchServerSideProps(path: string) {
+function fetchServerSideProps(path: string, abortController: AbortController) {
   return fetch(path, {
     headers: {
       "x-server-side-props": "true",
     },
+    signal: abortController.signal,
   }).then(
     (res) => res.json() as unknown as Omit<ServerSidePropsResult, "undefined">
   );
