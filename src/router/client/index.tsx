@@ -8,13 +8,14 @@ import {
 import type { JSX } from "react";
 import { join, routeGetter } from "../../utils";
 import { DevProvider } from "../../client/dev";
-import { useRequest } from "../../hooks";
 import { StackLayouts, layoutGetter } from "../../router/layout";
 import { ServerSidePropsProvider } from "../../features/serverSideProps/client";
+import type { masterRequest } from "frame-master/server/request";
 
 type RouterHostParams = {
   initialPath: currentRouteType;
   children: JSX.Element;
+  request: masterRequest | null;
 };
 
 type currentRouteType = {
@@ -38,15 +39,18 @@ export type CurrentRouteContextType = currentRouteType & {
 export const CurrentRouteContext = createContext<CurrentRouteContextType>(
   null as any
 );
+export const RequestContext = createContext<masterRequest | null>(null);
 
-export function RouterHost({ initialPath, children }: RouterHostParams) {
+export function RouterHost({
+  initialPath,
+  children,
+  request,
+}: RouterHostParams) {
   const [route, setRoute] = useState<currentRouteType>(initialPath);
   const [currentPageElement, setCurrentPageElement] =
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
-
-  const request = useRequest();
 
   const loadRoutePageModule = useCallback(async (path: string) => {
     const searchParams = new URLSearchParams();
@@ -133,10 +137,14 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   );
 
   return (
-    <CurrentRouteContext.Provider value={RouteContextMemo}>
-      <DevProvider>
-        <ServerSidePropsProvider>{currentPageElement}</ServerSidePropsProvider>
-      </DevProvider>
-    </CurrentRouteContext.Provider>
+    <RequestContext.Provider value={request}>
+      <CurrentRouteContext.Provider value={RouteContextMemo}>
+        <DevProvider>
+          <ServerSidePropsProvider>
+            {currentPageElement}
+          </ServerSidePropsProvider>
+        </DevProvider>
+      </CurrentRouteContext.Provider>
+    </RequestContext.Provider>
   );
 }
