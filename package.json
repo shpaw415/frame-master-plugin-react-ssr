@@ -7,7 +7,8 @@
     "frame-master-plugin-react-ssr": "bin/index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "frame-master": "link:frame-master"
   },
   "dependencies": {
     "commander": "^14.0.1"

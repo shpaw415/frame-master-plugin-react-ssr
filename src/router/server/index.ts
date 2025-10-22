@@ -34,13 +34,11 @@ class Router {
 
   private async _initRoutes() {
     this.routes.clear();
-    const glob = (
-      await Array.fromAsync(
-        new Bun.Glob("**/**.tsx").scanSync({
-          cwd: this.pageDir,
-          onlyFiles: true,
-        })
-      )
+    const glob = Array.from(
+      new Bun.Glob("**/**.tsx").scanSync({
+        cwd: this.pageDir,
+        onlyFiles: true,
+      })
     ).filter((file) => {
       return AUTHORIZED_ROUTE_NAMES.includes(file.split("/").pop()!);
     });

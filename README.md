@@ -1,15 +1,7 @@
 # frame-master-plugin-react-ssr
 
-To install dependencies:
+# Features
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.0. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- server side and client side routing
+- ServerSideProps via getServerSideProps(request: MasterRequest)
+-

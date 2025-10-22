@@ -1,7 +1,8 @@
-import { join } from "path";
+import path, { join } from "path";
 import type { Build_Plugins } from "./types";
 import packageJson from "../../package.json";
 import { mkdirSync, rmSync } from "fs";
+import { directiveManager } from "frame-master/utils";
 
 const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
   minify: process.env.NODE_ENV == "production",
@@ -30,6 +31,7 @@ type BuildProps = {
   plugins: Build_Plugins[];
   enableLogging?: boolean;
   buildDir: string;
+  srcDir: string;
 };
 
 class Builder {
@@ -37,19 +39,28 @@ class Builder {
   isLogEnabled: boolean;
   outputs: Bun.BuildArtifact[] | null = null;
   buildDir: string;
+  srcDir: string;
+  cwd = process.cwd();
 
   constructor(props: BuildProps) {
     this.plugins = props.plugins;
     this.isLogEnabled = props.enableLogging ?? true;
     this.buildDir = join(process.cwd(), props.buildDir);
+    this.srcDir = join(process.cwd(), props.srcDir);
   }
 
-  private log(...data: any[]) {
-    if (!this.isLogEnabled) return;
-    console.log("[Frame-Master-plugin-react-ssr Builder]:", ...data);
+  static createBuilder(props: BuildProps): Builder {
+    const builder = new Builder(props);
+    return builder;
   }
-  private error(...data: any[]) {
-    console.error("[Frame-Master-plugin-react-ssr Builder]:", ...data);
+
+  pluginRegexMake({ path, ext }: { path: string[]; ext: string[] }) {
+    return new RegExp(
+      `^${join(this.cwd, ...path).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      )}.*\\.(${ext.join("|")})$`
+    );
   }
 
   async build(entrypoints: string[]) {
@@ -57,6 +68,10 @@ class Builder {
     const buildConfig = await this.getPluginsOptions();
 
     buildConfig.entrypoints = [...buildConfig.entrypoints, ...entrypoints];
+    buildConfig.plugins = [
+      this.defaultPlugins(),
+      ...(buildConfig.plugins || []),
+    ];
 
     this.log("🔨 Building with merged configuration:", {
       entrypoints: buildConfig.entrypoints?.length || 0,
@@ -101,6 +116,116 @@ class Builder {
     }
 
     return config;
+  }
+
+  private defaultPlugins(): Bun.BunPlugin {
+    const self = this;
+
+    return {
+      name: "frame-master-plugin-react-ssr-builder-defaults",
+      target: "browser",
+      setup(build) {
+        build.onLoad(
+          {
+            filter: self.pluginRegexMake({
+              path: [self.srcDir],
+              ext: ["tsx"],
+            }),
+          },
+          async (args) => {
+            const { contents, loader } = await self.jsFileHandler({
+              args,
+              fileExt: "tsx",
+            });
+            return { contents, loader: loader || args.loader };
+          }
+        );
+        build.onLoad(
+          {
+            filter: self.pluginRegexMake({
+              path: [self.srcDir],
+              ext: ["ts"],
+            }),
+          },
+          async (args) => {
+            const { contents, loader } = await self.jsFileHandler({
+              args,
+              fileExt: "ts",
+            });
+            return { contents, loader: loader || args.loader };
+          }
+        );
+      },
+    };
+  }
+
+  private async jsFileHandler({
+    args,
+    fileExt,
+  }: {
+    args: Bun.OnLoadArgs;
+    fileExt: "tsx" | "ts" | "others";
+  }): Promise<{ contents: string; loader?: Bun.Loader }> {
+    if (await directiveManager.pathIs("server-only", args.path)) {
+      return this.returnEmptyFile("js", Object.keys(await import(args.path)));
+    }
+
+    let fileContents = await Bun.file(args.path).text();
+
+    let loaderOverRide: Bun.Loader | undefined = undefined;
+    for await (const plugin of this.plugins
+      .map((p) => p.partialPluginOverRide)
+      .filter((p) => p !== undefined)) {
+      const func = plugin[fileExt];
+      if (!func) continue;
+      try {
+        const res = await func(
+          { ...args, loader: loaderOverRide || args.loader },
+          fileContents,
+          directiveManager
+        );
+        const contents = await (res?.contents as unknown as Promise<string>);
+        if (contents) {
+          fileContents = contents;
+        }
+        if (res?.loader) {
+          loaderOverRide = res.loader as any;
+        }
+      } catch (e) {
+        throw new Error(
+          `Error occurred while processing partialPluginOverride[${fileExt}] with arguments:\n ${JSON.stringify(
+            args,
+            null,
+            2
+          )}`,
+          {
+            cause: e,
+          }
+        );
+      }
+    }
+
+    return {
+      contents: fileContents,
+      loader: loaderOverRide,
+    };
+  }
+
+  private returnEmptyFile(loader: Bun.Loader, exports: string[]) {
+    const toErrorString = (e: string) =>
+      `throw new Error("[ ${e} ] This is server-only component and cannot be used in client-side.")`;
+    return {
+      contents: exports
+        .map((e) => {
+          return e == "default"
+            ? `export default function _default() { ${toErrorString(
+                "default"
+              )} };`
+            : `export const ${e} = () => { ${toErrorString(e)} }`;
+        })
+        .join("\n"),
+      loader,
+    };
   }
 
   private mergeConfigSafely(
@@ -162,7 +287,6 @@ class Builder {
       this.error(e);
     }
   }
-
   private isPlainObject(value: any): boolean {
     return (
       value !== null &&
@@ -172,6 +296,13 @@ class Builder {
       !(value instanceof RegExp) &&
       Object.prototype.toString.call(value) === "[object Object]"
     );
+  }
+  private log(...data: any[]) {
+    if (!this.isLogEnabled) return;
+    console.log("[Frame-Master-plugin-react-ssr Builder]:", ...data);
+  }
+  private error(...data: any[]) {
+    console.error("[Frame-Master-plugin-react-ssr Builder]:", ...data);
   }
 }
 

@@ -2,13 +2,17 @@ import Router from "@/router/server";
 import type { FrameMasterPlugin } from "frame-master/plugin/types";
 import type { masterRequest } from "frame-master/server/request";
 import type { JSX } from "react";
-import { join, parse } from "path";
+import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
 import { StackLayouts } from "@/router/layout";
 import { Builder } from "@/build";
 import type { Build_Plugins } from "./src/build/types";
-import FrameMasterConfig from "frame-master/config";
+import {
+  getServerSideProps,
+  type ServerSidePropsContext,
+  type ServerSidePropsResult,
+} from "@/features/serverSideProps/server";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   process.cwd(),
@@ -58,6 +62,7 @@ declare global {
   var __ROUTES__: Array<string>;
   var __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   var __HMR_WEBSOCKET_CLIENTS__: Bun.ServerWebSocket<undefined>[];
+  var __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS: ServerSidePropsResult;
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
     request: masterRequest | null;
@@ -79,10 +84,11 @@ export type reactSSRPluginContext = {
 function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const config = { ...DEFAULT_CONFIG, ...options };
 
-  const builder = new Builder({
+  const builder = Builder.createBuilder({
     enableLogging: config.debug,
     plugins: [...(config.buildConfig as Build_Plugins[])] as Build_Plugins[],
     buildDir: config.pathToBuildDir!,
+    srcDir: config.pathToPagesDir!,
   });
 
   const { buildConfig, pathToShellFile, ...toBePublic } =
@@ -91,13 +97,17 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   return {
     name: "frame-master-plugin-react-ssr",
     router: {
-      before_request(req) {
-        if (req.isAskingHTML)
+      async before_request(req) {
+        if (req.isAskingHTML) {
+          const SSP = await getServerSideProps(req, config);
           req.setGlobalValues({
             __ROUTES__: globalThis.__ROUTES__,
             __REACT_SSR_PLUGIN_OPTIONS__:
               toBePublic as Required<ReactSSRPluginOptions>,
+            __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS: SSP,
           });
+          req.setContext<ServerSidePropsContext>({ props: SSP });
+        }
         req.setContext<reactSSRPluginContext>({
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
