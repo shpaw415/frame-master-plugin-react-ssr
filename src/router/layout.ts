@@ -1,4 +1,4 @@
-import { join } from "@/utils";
+import { join } from "../utils";
 import type { JSX } from "react";
 
 type LayoutElementFunction = (props: { children: JSX.Element }) => JSX.Element;

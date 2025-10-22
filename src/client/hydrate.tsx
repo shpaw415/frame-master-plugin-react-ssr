@@ -8,8 +8,8 @@
 import { hydrateRoot } from "react-dom/client";
 import Shell from "../Shell";
 import type { JSX } from "react";
-import { join } from "@/utils";
-import { layoutGetter, StackLayouts } from "@/router/layout";
+import { join } from "../utils";
+import { layoutGetter, StackLayouts } from "../router/layout";
 
 async function start() {
   const url = new URL(window.location.href);

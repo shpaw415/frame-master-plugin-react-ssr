@@ -1,5 +1,5 @@
 import type { masterRequest } from "frame-master/server/request";
-import Router from "@/router/server";
+import Router from "../../router/server";
 
 const cwd = process.cwd();
 

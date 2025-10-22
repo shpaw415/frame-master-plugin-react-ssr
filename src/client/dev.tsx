@@ -1,4 +1,4 @@
-import { useRoute } from "@/hooks";
+import { useRoute } from "../hooks";
 import { createContext, useEffect, useRef } from "react";
 
 const DevContext = createContext<{ ws: WebSocket } | null>(null);
