@@ -52,7 +52,13 @@ function fetchServerSideProps(path: string, abortController: AbortController) {
       "x-server-side-props": "true",
     },
     signal: abortController.signal,
-  }).then(
-    (res) => res.json() as unknown as Omit<ServerSidePropsResult, "undefined">
-  );
+  })
+    .catch((res) => {})
+    .then(
+      (res) =>
+        (res ? res.json() : null) as unknown as Omit<
+          ServerSidePropsResult,
+          "undefined"
+        >
+    );
 }
