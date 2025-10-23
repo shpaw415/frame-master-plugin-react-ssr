@@ -11,7 +11,7 @@ import type { JSX } from "react";
 import { join } from "../utils";
 import { layoutGetter, StackLayouts } from "../router/layout";
 import { jsxDEV, type JSXSource } from "react/jsx-dev-runtime";
-import { jsxs } from "react/jsx-runtime";
+import { jsxs, jsx } from "react/jsx-runtime";
 import React from "react";
 
 declare global {
