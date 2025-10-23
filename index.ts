@@ -95,6 +95,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   return {
     name: "frame-master-plugin-react-ssr",
+    version: PackageJson.version,
     priority: config.priority,
     websocket: {
       onOpen(ws) {

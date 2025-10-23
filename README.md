@@ -366,9 +366,6 @@ type ReactSSRPluginOptions = {
   /** Custom build plugins */
   buildConfig?: Build_Plugins[];
 
-  /** WebSocket port for HMR (default: 3001) */
-  devServerPort?: number;
-
   /** Plugin priority (default: 10) */
   priority?: number;
 };

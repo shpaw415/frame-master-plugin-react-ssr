@@ -11,7 +11,7 @@
         "frame-master": "link:frame-master",
       },
       "peerDependencies": {
-        "frame-master": "https://github.com/shpaw415/frame-master.git#2d04b14",
+        "frame-master": "https://github.com/shpaw415/frame-master.git#0ce1ad1",
         "typescript": "^5",
       },
     },
