@@ -1,4 +1,4 @@
-import path, { join } from "path";
+import { join } from "path";
 import type { Build_Plugins } from "./types";
 import packageJson from "../../package.json";
 import { mkdirSync, rmSync } from "fs";
@@ -80,7 +80,10 @@ class Builder {
 
     await Promise.all(this.plugins.map((p) => p.before_build?.()));
 
-    const res = await Bun.build(buildConfig);
+    const res = await Bun.build({
+      minify: process.env.NODE_ENV == "prduction",
+      ...buildConfig,
+    });
 
     await Promise.all(this.plugins.map((p) => p.after_build?.(res)));
 
