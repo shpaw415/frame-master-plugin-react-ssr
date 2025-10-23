@@ -19,7 +19,6 @@ type PartialOverRideResponse =
   | undefined;
 
 export type Build_Plugins = Partial<{
-  plugin: Bun.BunPlugin;
   buildOptions:
     | Partial<Bun.BuildConfig>
     | (() => Promise<Partial<Bun.BuildConfig>> | Partial<Bun.BuildConfig>);

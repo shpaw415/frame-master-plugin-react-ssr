@@ -65,7 +65,7 @@ class Builder {
     this.clearBuildDir();
     if (process.env.NODE_ENV != "production") directiveManager.clearPaths();
     const buildConfig = await this.getPluginsOptions();
-
+    this.log("Build Config:", buildConfig);
     buildConfig.entrypoints = [...buildConfig.entrypoints, ...entrypoints];
     buildConfig.plugins = [
       this.defaultPlugins(),
@@ -74,7 +74,7 @@ class Builder {
 
     this.log("🔨 Building with merged configuration:", {
       entrypoints: buildConfig.entrypoints?.length || 0,
-      plugins: buildConfig.plugins?.length || 0,
+      plugins: buildConfig.plugins.length || 0,
       outdir: this.buildDir,
     });
 
@@ -265,12 +265,56 @@ class Builder {
         continue;
       }
 
-      // Handle different merge strategies based on type
-      if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
-        // Merge arrays by concatenating unique values
+      // Special handling for specific config keys
+      if (
+        key === "entrypoints" &&
+        Array.isArray(targetValue) &&
+        Array.isArray(sourceValue)
+      ) {
+        // Merge entrypoints, removing duplicates by path
+        const entrySet = new Set([...targetValue, ...sourceValue]);
+        (target as any)[key] = Array.from(entrySet);
+      } else if (
+        key === "plugins" &&
+        Array.isArray(targetValue) &&
+        Array.isArray(sourceValue)
+      ) {
+        // Plugins should be concatenated to preserve order and allow multiple instances
+        (target as any)[key] = [...targetValue, ...sourceValue];
+      } else if (
+        key === "external" &&
+        Array.isArray(targetValue) &&
+        Array.isArray(sourceValue)
+      ) {
+        // External modules should be deduplicated
+        const externalSet = new Set([...targetValue, ...sourceValue]);
+        (target as any)[key] = Array.from(externalSet);
+      } else if (
+        key === "define" &&
+        this.isPlainObject(targetValue) &&
+        this.isPlainObject(sourceValue)
+      ) {
+        // Define should merge keys, with source overriding target
+        (target as any)[key] = {
+          ...(targetValue as Record<string, any>),
+          ...(sourceValue as Record<string, any>),
+        };
+      } else if (
+        key === "loader" &&
+        this.isPlainObject(targetValue) &&
+        this.isPlainObject(sourceValue)
+      ) {
+        // Loader should merge keys, with source overriding target
+        (target as any)[key] = {
+          ...(targetValue as Record<string, any>),
+          ...(sourceValue as Record<string, any>),
+        };
+      } else if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+        // Generic array merge - concatenate and deduplicate primitives
         const merged = [...targetValue];
         for (const item of sourceValue) {
-          if (!merged.includes(item)) {
+          // Only deduplicate primitives, keep all objects
+          if (typeof item === "object" || !merged.includes(item)) {
             merged.push(item);
           }
         }
@@ -279,13 +323,19 @@ class Builder {
         this.isPlainObject(targetValue) &&
         this.isPlainObject(sourceValue)
       ) {
-        // Merge objects recursively
-        (target as any)[key] = {
-          ...(targetValue as Record<string, any>),
-          ...(sourceValue as Record<string, any>),
-        };
-      } else if (targetValue !== sourceValue) {
-        // Conflict detected - values can't be merged
+        // Deep merge objects
+        (target as any)[key] = this.deepMerge(
+          targetValue as Record<string, any>,
+          sourceValue as Record<string, any>
+        );
+      } else if (typeof targetValue === typeof sourceValue) {
+        // Same type, source overrides target (boolean, string, number)
+        this.log(
+          `ℹ️  Build config "${key}" overridden: ${targetValue} → ${sourceValue}`
+        );
+        (target as any)[key] = sourceValue;
+      } else {
+        // Type mismatch - warn and use source value
         console.warn(
           `⚠️  Build config conflict for key "${key}": ` +
             `Cannot merge ${typeof targetValue} with ${typeof sourceValue}. ` +
@@ -293,8 +343,32 @@ class Builder {
         );
         (target as any)[key] = sourceValue;
       }
-      // If values are the same, no action needed
     }
+    return target;
+  }
+
+  private deepMerge(
+    target: Record<string, any>,
+    source: Record<string, any>
+  ): Record<string, any> {
+    const result = { ...target };
+
+    for (const [key, sourceValue] of Object.entries(source)) {
+      const targetValue = result[key];
+
+      if (sourceValue === undefined) continue;
+
+      if (this.isPlainObject(targetValue) && this.isPlainObject(sourceValue)) {
+        result[key] = this.deepMerge(targetValue, sourceValue);
+      } else if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+        // For nested arrays, concatenate
+        result[key] = [...targetValue, ...sourceValue];
+      } else {
+        result[key] = sourceValue;
+      }
+    }
+
+    return result;
   }
   private clearBuildDir() {
     try {
@@ -323,6 +397,7 @@ class Builder {
     console.log("[Frame-Master-plugin-react-ssr Builder]:", ...data);
   }
   private error(...data: any[]) {
+    if (!this.isLogEnabled) return;
     console.error("[Frame-Master-plugin-react-ssr Builder]:", ...data);
   }
 }

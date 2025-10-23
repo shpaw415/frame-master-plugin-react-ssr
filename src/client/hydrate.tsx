@@ -48,7 +48,6 @@ async function start() {
     globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
   );
 
-  console.log({ layouts, layoutRoutes, path });
   hydrateRoot(
     document.getElementById("root")!,
     <Shell request={null}>
