@@ -38,8 +38,6 @@ export type ReactSSRPluginOptions = {
   /** Enable debug logs **default: false** */
   debug?: boolean;
   buildConfig?: Build_Plugins[];
-  /** WebSocket Dev Server for HMR reloading client side */
-  devServerPort: number;
   /** plugin priority for fireing order */
   priority?: number;
 };
@@ -50,7 +48,6 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
   debug: false,
   buildConfig: [],
-  devServerPort: 3001,
   priority: 10,
 };
 
@@ -99,6 +96,22 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   return {
     name: "frame-master-plugin-react-ssr",
     priority: config.priority,
+    websocket: {
+      onOpen(ws) {
+        log("[HMR] Client connected for HMR");
+        globalThis.__HMR_WEBSOCKET_CLIENTS__.push(ws);
+      },
+      onClose(ws) {
+        log("[HMR] Client disconnected from HMR");
+        globalThis.__HMR_WEBSOCKET_CLIENTS__ =
+          globalThis.__HMR_WEBSOCKET_CLIENTS__.filter(
+            (client) => client !== ws
+          );
+      },
+      onMessage(ws, message) {
+        log("[HMR] Message from client:", message);
+      },
+    },
     router: {
       async before_request(req) {
         const SSP = await getServerSideProps(req, router!);
@@ -148,34 +161,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         } else {
           const res = serveFromBuild(req.URL.pathname, builder);
           if (!res) return;
-          req.preventGlobalValuesInjection().preventRewrite();
-          req.setResponse(res, {
-            headers: { "Content-Type": "application/javascript" },
-          });
+          req
+            .setResponse(res, {
+              headers: { "Content-Type": "application/javascript" },
+            })
+            .preventGlobalValuesInjection()
+            .preventRewrite()
+            .sendNow();
         }
       },
     },
-    serverConfig:
-      process.env.NODE_ENV !== "production"
-        ? {
-            websocket: {
-              open(ws) {
-                log("[HMR] Client connected for HMR");
-                globalThis.__HMR_WEBSOCKET_CLIENTS__.push(ws);
-              },
-              close(ws) {
-                log("[HMR] Client disconnected from HMR");
-                globalThis.__HMR_WEBSOCKET_CLIENTS__ =
-                  globalThis.__HMR_WEBSOCKET_CLIENTS__.filter(
-                    (client) => client !== ws
-                  );
-              },
-              message(ws, message) {
-                log("[HMR] Message from client:", message);
-              },
-            },
-          }
-        : {},
     serverStart: {
       async main() {
         if (!router)

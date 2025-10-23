@@ -30,7 +30,6 @@ bunx frame-master-plugin-react-ssr init
 
 This creates:
 
-- `src/pages/` directory for your pages
 - `shell.tsx` - Root shell component
 
 ### 2. Configure Frame-Master
@@ -46,7 +45,6 @@ const config: FrameMasterConfig = {
     ReactSSRPlugin({
       pathToPagesDir: "src/pages",
       pathToBuildDir: ".frame-master/build",
-      devServerPort: 3001,
       debug: false,
     }),
   ],
@@ -72,7 +70,7 @@ export default function HomePage() {
 ### 4. Start the Server
 
 ```bash
-bun dev
+bun frame-master dev
 ```
 
 Visit `http://localhost:3000` to see your SSR React app!
@@ -171,7 +169,7 @@ export default function UsersPage() {
 }
 ```
 
-### Redirects from getServerSideProps
+### Redirects from getServerSideProps ( coming soon )
 
 ```tsx
 export async function getServerSideProps(request: masterRequest) {
