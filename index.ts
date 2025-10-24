@@ -132,7 +132,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
       },
       async request(req) {
-        if (
+        if (!req.isResponseSetted()) return;
+        else if (
           req.URL.pathname == "/hmr" &&
           process.env.NODE_ENV != "production"
         ) {
@@ -140,8 +141,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             ? req.setResponse("welcome!").sendNow()
             : req.setResponse("Failed to upgrade", { status: 400 }).sendNow();
           return;
-        }
-        if (req.isAskingHTML) {
+        } else if (req.isAskingHTML) {
           const pathname = req.URL.pathname;
           const page = router?.getFromRoutePath(pathname);
           if (!page) return;
