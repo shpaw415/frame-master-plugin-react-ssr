@@ -132,7 +132,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
       },
       async request(req) {
-        if (!req.isResponseSetted()) return;
+        if (req.isResponseSetted()) return;
         else if (
           req.URL.pathname == "/hmr" &&
           process.env.NODE_ENV != "production"

@@ -74,10 +74,11 @@ async function start() {
   const path = url.pathname;
   const Shell = (
     await import(
-      globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToShellFile.replace(
-        ".tsx",
-        ".js"
-      )
+      "/" +
+        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToShellFile.replace(
+          ".tsx",
+          ".js"
+        )
     )
   ).default;
   const page = (await import(
