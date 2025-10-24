@@ -90,7 +90,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     srcDir: config.pathToPagesDir!,
   });
 
-  const { buildConfig, pathToShellFile, ...toBePublic } =
+  const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
 
   return {
@@ -198,7 +198,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           .getRoutePaths()
           .map((route) => join(router?.pageDir!, route));
 
-        await builder.build(routes);
+        await builder.build([...routes, config.pathToShellFile!]);
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
@@ -208,7 +208,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder.build(routes).then(() => {
+      builder.build([...routes, config.pathToShellFile!]).then(() => {
         HMRBroadcast("update");
       });
     },

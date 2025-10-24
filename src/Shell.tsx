@@ -2,7 +2,7 @@ import type { masterRequest } from "frame-master/server/request";
 import { RouterHost } from "./router/client";
 import type { JSX } from "react";
 import { useMemo } from "react";
-import { RequestProvider, ServerSidePropsProvider } from "./hooks/providers";
+import { RequestProvider } from "./hooks/providers";
 
 type ShellProps = {
   children: JSX.Element;

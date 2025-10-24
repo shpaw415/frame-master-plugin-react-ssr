@@ -6,7 +6,6 @@
  */
 
 import { hydrateRoot } from "react-dom/client";
-import Shell from "../Shell";
 import type { JSX } from "react";
 import { join } from "../utils";
 import { layoutGetter, StackLayouts } from "../router/layout";
@@ -73,6 +72,14 @@ globalThis.Fragment = Fragment;
 async function start() {
   const url = new URL(window.location.href);
   const path = url.pathname;
+  const Shell = (
+    await import(
+      globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToShellFile.replace(
+        ".tsx",
+        ".js"
+      )
+    )
+  ).default;
   const page = (await import(
     "/" +
       join(
