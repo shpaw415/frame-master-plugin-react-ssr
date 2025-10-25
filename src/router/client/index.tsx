@@ -29,6 +29,10 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+  
+  console.log("[RouterHost] Render count:", renderCountRef.current);
 
   // Use ref instead of state to avoid re-renders and stale closures
   const abortControllerRef = useRef(new AbortController());
@@ -123,6 +127,11 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
 
   // Keep route pathname in a ref to avoid dependency issues
   const routePathnameRef = useRef(route.pathname);
+  const searchParamsString = useMemo(
+    () => route.searchParams.toString(),
+    [route.searchParams]
+  );
+  
   useEffect(() => {
     routePathnameRef.current = route.pathname;
   }, [route.pathname]);
@@ -154,7 +163,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     () => {
       console.log("[RouterHost] Creating new RouteContextMemo", {
         pathname: route.pathname,
-        searchParams: route.searchParams.toString(),
+        searchParams: searchParamsString,
         version: routeVersion,
       });
       return {
@@ -168,7 +177,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     },
     [
       route.pathname,
-      route.searchParams.toString(),
+      searchParamsString,
       routeSetter,
       reloadRoute,
       isInitialRoute,
