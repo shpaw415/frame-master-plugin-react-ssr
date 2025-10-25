@@ -20,7 +20,8 @@
     "./shell": "./src/Shell.tsx",
     "./hydrate": "./src/client/hydrate.tsx",
     "./plugin": "./index.ts",
-    "./hooks": "./src/hooks/index.ts"
+    "./hooks": "./src/hooks/index.ts",
+    "./router/utils": "./src/router/index.ts"
   },
   "scripts": {
     "dev": "NODE_ENV=development bun --hot frame-master dev",

@@ -1,3 +1,4 @@
+"server only";
 import type { JSX } from "react";
 import { join } from "path";
 import { getRelatedLayoutPaths } from "../layout";
