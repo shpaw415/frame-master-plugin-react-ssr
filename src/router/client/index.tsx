@@ -31,7 +31,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   const [routeVersion, setRouteVersion] = useState(0);
   const renderCountRef = useRef(0);
   renderCountRef.current++;
-  
+
   console.log("[RouterHost] Render count:", renderCountRef.current);
 
   // Use ref instead of state to avoid re-renders and stale closures
@@ -131,7 +131,7 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     () => route.searchParams.toString(),
     [route.searchParams]
   );
-  
+
   useEffect(() => {
     routePathnameRef.current = route.pathname;
   }, [route.pathname]);
@@ -159,31 +159,28 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     };
   }, [loadRoutePageModule, routeSetter]);
 
-  const RouteContextMemo = useMemo(
-    () => {
-      console.log("[RouterHost] Creating new RouteContextMemo", {
-        pathname: route.pathname,
-        searchParams: searchParamsString,
-        version: routeVersion,
-      });
-      return {
-        pathname: route.pathname,
-        searchParams: route.searchParams,
-        navigate: routeSetter,
-        reload: reloadRoute,
-        isInitial: isInitialRoute,
-        version: routeVersion,
-      };
-    },
-    [
-      route.pathname,
-      searchParamsString,
-      routeSetter,
-      reloadRoute,
-      isInitialRoute,
-      routeVersion,
-    ]
-  );
+  const RouteContextMemo = useMemo(() => {
+    console.log("[RouterHost] Creating new RouteContextMemo", {
+      pathname: route.pathname,
+      searchParams: searchParamsString,
+      version: routeVersion,
+    });
+    return {
+      pathname: route.pathname,
+      searchParams: route.searchParams,
+      navigate: routeSetter,
+      reload: reloadRoute,
+      isInitial: isInitialRoute,
+      version: routeVersion,
+    };
+  }, [
+    route.pathname,
+    searchParamsString,
+    routeSetter,
+    reloadRoute,
+    isInitialRoute,
+    routeVersion,
+  ]);
 
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>

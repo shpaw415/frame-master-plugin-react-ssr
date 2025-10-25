@@ -35,6 +35,8 @@ export type ReactSSRPluginOptions = {
   pathToBuildDir?: string;
   /** Path to the shell file **default: "frame-master-plugin-react-ssr/init/shell.default.tsx"** */
   pathToShellFile?: string;
+  /** Path to the Hydrate file to bootstrap */
+  pathToHydrateFile?: string;
   /** Enable debug logs **default: false** */
   debug?: boolean;
   buildConfig?: Build_Plugins[];
@@ -45,6 +47,13 @@ export type ReactSSRPluginOptions = {
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToPagesDir: "src/pages",
   pathToBuildDir: ".frame-master/build",
+  pathToHydrateFile: join(
+    "node_modules",
+    PackageJson.name,
+    "src",
+    "client",
+    "hydrate.tsx"
+  ),
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
   debug: false,
   buildConfig: [],
@@ -198,7 +207,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           .getRoutePaths()
           .map((route) => join(router?.pageDir!, route));
 
-        await builder.build([...routes, config.pathToShellFile!]);
+        await builder.build([
+          ...routes,
+          config.pathToShellFile!,
+          config.pathToHydrateFile!,
+        ]);
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
@@ -208,9 +221,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder.build([...routes, config.pathToShellFile!]).then(() => {
-        HMRBroadcast("update");
-      });
+      builder
+        .build([...routes, config.pathToShellFile!, config.pathToHydrateFile!])
+        .then(() => {
+          HMRBroadcast("update");
+        });
     },
   } satisfies FrameMasterPlugin;
 }

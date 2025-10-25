@@ -25,7 +25,7 @@ bun add frame-master-plugin-react-ssr
 ### 1. Initialize the Plugin
 
 ```bash
-bunx frame-master-plugin-react-ssr init
+bunx fmp-react-ssr init
 ```
 
 This creates:

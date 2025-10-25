@@ -8,7 +8,7 @@ const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
   minify: process.env.NODE_ENV == "production",
   splitting: true,
   entrypoints: [
-    join("node_modules", packageJson.name, "src", "client", "hydrate.tsx"),
+    /*
     "react",
     "react-dom",
     join(
@@ -18,6 +18,7 @@ const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
       "react-jsx-dev-runtime.development.js"
     ),
     join("node_modules", "react", "jsx-dev-runtime.js"),
+    */
   ],
   plugins: [],
   define: {},

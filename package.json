@@ -4,23 +4,26 @@
   "type": "module",
   "version": "1.0.0",
   "bin": {
-    "frame-master-plugin-react-ssr": "bin/index.ts"
+    "fmp-react-ssr": "bin/index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "frame-master": "link:frame-master"
+    "@types/bun": "latest"
   },
   "dependencies": {
     "commander": "^14.0.1"
   },
   "peerDependencies": {
     "typescript": "^5",
-    "frame-master": "https://github.com/shpaw415/frame-master.git#240c2b5"
+    "frame-master": "https://github.com/shpaw415/frame-master.git#33a0f5b"
   },
   "exports": {
     "./shell": "./src/Shell.tsx",
     "./hydrate": "./src/client/hydrate.tsx",
     "./plugin": "./index.ts",
     "./hooks": "./src/hooks/index.ts"
+  },
+  "scripts": {
+    "dev": "NODE_ENV=development bun --hot frame-master dev",
+    "start": "NODE_ENV=production bun frame-master start"
   }
 }
