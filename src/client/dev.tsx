@@ -6,6 +6,13 @@ const DevContext = createContext<{ ws: WebSocket } | null>(null);
 export function DevProvider({ children }: { children: React.ReactNode }) {
   const router = useRoute();
   const ws = useRef<null | WebSocket>(null);
+  const routerRef = useRef(router);
+
+  // Keep router ref up to date
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+
   useEffect(() => {
     if (process.env.NODE_ENV == "production") return;
 
@@ -24,8 +31,8 @@ export function DevProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.type === "update") {
-        console.log("[HMR] Updating route:", router.pathname);
-        router.reload();
+        console.log("[HMR] Updating route:", routerRef.current.pathname);
+        routerRef.current.reload();
       }
     };
 
@@ -33,7 +40,8 @@ export function DevProvider({ children }: { children: React.ReactNode }) {
     return () => {
       ws.current?.removeEventListener("message", eventHandler);
     };
-  }, [router.pathname, router.reload]);
+  }, []); // Empty dependency array - only run once
+
   return (
     <DevContext.Provider value={{ ws: ws.current! }}>
       {children}

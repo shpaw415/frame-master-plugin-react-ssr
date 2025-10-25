@@ -120,13 +120,20 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
     [loadRoutePageModule]
   );
 
+  // Keep route pathname in a ref to avoid dependency issues
+  const routePathnameRef = useRef(route.pathname);
+  useEffect(() => {
+    routePathnameRef.current = route.pathname;
+  }, [route.pathname]);
+
   const reloadRoute = useCallback(() => {
-    loadRoutePageModule(
-      route.pathname.startsWith("/") ? route.pathname : "/" + route.pathname
-    );
+    const currentPath = routePathnameRef.current.startsWith("/")
+      ? routePathnameRef.current
+      : "/" + routePathnameRef.current;
+    loadRoutePageModule(currentPath);
     setIsInitialRoute(false);
     setRouteVersion((c) => c + 1);
-  }, [route.pathname, loadRoutePageModule]);
+  }, [loadRoutePageModule]);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -150,7 +157,14 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
       isInitial: isInitialRoute,
       version: routeVersion,
     }),
-    [routeSetter, reloadRoute, route, isInitialRoute, routeVersion]
+    [
+      route.pathname,
+      route.searchParams.toString(),
+      routeSetter,
+      reloadRoute,
+      isInitialRoute,
+      routeVersion,
+    ]
   );
 
   return (
