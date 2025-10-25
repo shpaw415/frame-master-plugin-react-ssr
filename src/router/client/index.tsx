@@ -23,6 +23,7 @@ type RouterHostParams = {
 };
 
 export function RouterHost({ initialPath, children }: RouterHostParams) {
+  console.log("[RouterHost] Render");
   const [route, setRoute] = useState<currentRouteType>(initialPath);
   const [currentPageElement, setCurrentPageElement] =
     useState<JSX.Element>(children);
@@ -150,13 +151,21 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   }, [loadRoutePageModule, routeSetter]);
 
   const RouteContextMemo = useMemo(
-    () => ({
-      ...route,
-      navigate: routeSetter,
-      reload: reloadRoute,
-      isInitial: isInitialRoute,
-      version: routeVersion,
-    }),
+    () => {
+      console.log("[RouterHost] Creating new RouteContextMemo", {
+        pathname: route.pathname,
+        searchParams: route.searchParams.toString(),
+        version: routeVersion,
+      });
+      return {
+        pathname: route.pathname,
+        searchParams: route.searchParams,
+        navigate: routeSetter,
+        reload: reloadRoute,
+        isInitial: isInitialRoute,
+        version: routeVersion,
+      };
+    },
     [
       route.pathname,
       route.searchParams.toString(),
