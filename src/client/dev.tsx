@@ -1,11 +1,12 @@
 import { useRoute } from "../hooks";
-import { createContext, useEffect, useRef } from "react";
+import { createContext, useEffect, useRef, type JSX } from "react";
 
 const DevContext = createContext<{ ws: WebSocket } | null>(null);
 
-export function DevProvider({ children }: { children: React.ReactNode }) {
+export function DevProvider({ children }: { children: JSX.Element }) {
+  console.log("[DevProvider] Render");
   const router = useRoute();
-  const ws = useRef<null | WebSocket>(null);
+  const ws = useRef<WebSocket | null>(null);
   const routerRef = useRef(router);
 
   // Keep router ref up to date

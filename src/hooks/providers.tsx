@@ -26,6 +26,7 @@ export function ServerSidePropsProvider({
   children: JSX.Element;
   abortController: AbortController;
 }) {
+  console.log("[ServerSidePropsProvider] Render");
   const request = useRequest();
   const [props, setProps] = useState(
     request
@@ -34,7 +35,9 @@ export function ServerSidePropsProvider({
       : globalThis.__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__
   );
   const route = useRoute();
+  console.log("[ServerSidePropsProvider] route.version:", route.version);
   useRouteEffect(() => {
+    console.log("[ServerSidePropsProvider] useRouteEffect triggered");
     setProps(null);
     fetchServerSideProps(route.pathname, abortController).then(setProps);
   });
