@@ -5,7 +5,6 @@ import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import { StackLayouts } from "./src/router/layout";
 import { Builder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import {
@@ -17,13 +16,23 @@ import { pageToJSXElement } from "./src/router/server/render";
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
   PackageJson.name
-) as `<cwd>/node_modules/${string}`;
+) as `node_modules/<react-plugin-name>`;
 
 export const PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE = join(
   PATH_TO_REACT_SSR_PLUGIN,
   "init",
   "shell.default.tsx"
 );
+export const PATH_TO_REACT_SSR_PLUGIN_DEFAULT_CLIENT_WRAPPER_FILE = join(
+  PATH_TO_REACT_SSR_PLUGIN,
+  "init",
+  "client-wrapper.tsx"
+) as `<react-ssr-plugin>/init/client-wrapper.tsx`;
+
+const PATH_TO_HYDRATE = {
+  server: join(PATH_TO_REACT_SSR_PLUGIN, "init", "hydrate.ts"),
+  client: ["node_modules", PackageJson.name, "init", "hydrate.js"].join("/"),
+};
 
 export type ReactSSRPluginOptions = {
   /** Enable server-side rendering in future release */
@@ -36,10 +45,11 @@ export type ReactSSRPluginOptions = {
   pathToBuildDir?: string;
   /** Path to the shell file **default: "frame-master-plugin-react-ssr/init/shell.default.tsx"** */
   pathToShellFile?: string;
-  /** Path to the Hydrate file to bootstrap */
-  pathToHydrateFile?: string;
+  /** Path to the ClientWrapper **default: "frame-master-plugin-react-ssr/init/client-wrapper.tsx"** */
+  pathToClientWrapper?: string;
   /** Enable debug logs **default: false** */
   debug?: boolean;
+  /** Config to apply to the build step */
   buildConfig?: Build_Plugins[];
   /** plugin priority for fireing order */
   priority?: number;
@@ -48,13 +58,8 @@ export type ReactSSRPluginOptions = {
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToPagesDir: "src/pages",
   pathToBuildDir: ".frame-master/build",
-  pathToHydrateFile: join(
-    "node_modules",
-    PackageJson.name,
-    "init",
-    "hydrate.tsx"
-  ),
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
+  pathToClientWrapper: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_CLIENT_WRAPPER_FILE,
   debug: false,
   buildConfig: [],
   priority: 10,
@@ -106,8 +111,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     if (!page) {
       return null;
     }
-    const pathToHydrateFileClientSide =
-      config.pathToHydrateFile!.split(".").slice(0, -1).join(".") + ".js";
     return renderToReadableStream(
       pageToJSXElement({
         Shell: globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__,
@@ -118,9 +121,13 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         onError(err) {
           console.error(err);
         },
-        bootstrapModules: [pathToHydrateFileClientSide],
+        bootstrapModules: [PATH_TO_HYDRATE.client],
       }
     );
+  };
+
+  const buildWithConfig = (...routes: string[]) => {
+    return builder.build([...routes, PATH_TO_HYDRATE.server]);
   };
 
   return {
@@ -228,11 +235,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           .getRoutePaths()
           .map((route) => join(router?.pageDir!, route));
 
-        await builder.build([
-          ...routes,
-          config.pathToShellFile!,
-          config.pathToHydrateFile!,
-        ]);
+        await buildWithConfig(...routes);
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
@@ -242,11 +245,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         .getRoutePaths()
         .map((route) => join(router?.pageDir!, route));
 
-      builder
-        .build([...routes, config.pathToShellFile!, config.pathToHydrateFile!])
-        .then(() => {
-          HMRBroadcast("update");
-        });
+      buildWithConfig(...routes).then(() => {
+        HMRBroadcast("update");
+      });
     },
   } satisfies FrameMasterPlugin;
 }

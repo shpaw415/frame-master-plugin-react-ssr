@@ -34,19 +34,27 @@ export async function createPageByPathname(pathname: string) {
     </StackLayouts>
   );
 }
-/** Get the Shell from the server to put in the hydrate */
-export async function Shell(props: { pathname: string }): Promise<JSX.Element> {
-  const ShellElementFunction = (
-    await import(
-      "/" +
-        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToShellFile.replace(
-          ".tsx",
-          ".js"
-        )
-    )
-  ).default as (props: { children: JSX.Element }) => JSX.Element;
 
-  return ShellElementFunction({
-    children: await createPageByPathname(props.pathname),
-  });
+export async function Shell({
+  pathname,
+}: {
+  pathname: string;
+}): Promise<JSX.Element> {
+  const ClientWrapperModule = (await import(
+    "/" +
+      join(
+        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToClientWrapper
+          .split(".")
+          .slice(0, -1)
+          .join(".") + ".js"
+      )
+  )) as {
+    default: (props: { children: JSX.Element }) => JSX.Element;
+  };
+
+  return (
+    <ClientWrapperModule.default>
+      {await createPageByPathname(pathname)}
+    </ClientWrapperModule.default>
+  );
 }

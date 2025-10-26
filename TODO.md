@@ -1,0 +1,2 @@
+- add client wrapper
+- hydrate file only in the react-ssr plugin no need for init in the project
