@@ -14,6 +14,10 @@ type RouterHostParams = {
   children: JSX.Element;
 };
 
+/**
+ * default client Router Host from frame-master-plugin-react-ssr
+ * @returns
+ */
 export function RouterHost({ children }: RouterHostParams) {
   console.log("[RouterHost] Render");
   const request = useRequest();

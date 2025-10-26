@@ -1,6 +1,7 @@
 import { PATH_TO_REACT_SSR_PLUGIN } from "../index";
 import { join } from "path";
 import Paths from "frame-master/paths";
+import { mkdirSync } from "fs";
 
 export default async function initPlugin() {
   console.log("Initializing React SSR plugin...");
@@ -27,6 +28,16 @@ export default async function initPlugin() {
       await defaultClientWrapperFile.text()
     );
 
+  try {
+    mkdirSync("src/pages", {
+      recursive: true,
+    });
+  } catch {
+    console.error(
+      "cannot create src/pages it might be unwritable or already exists"
+    );
+  }
+
   console.log(
     [
       "",
@@ -42,6 +53,7 @@ export default async function initPlugin() {
       "   \x1b[90mReactSSRPlugin(\x1b[0m{",
       '     pathToShellFile: \x1b[33m".frame-master/shell.tsx"\x1b[0m,',
       '     pathToClientWrapper: \x1b[33m".frame-master/client-wrapper.tsx"\x1b[0m',
+      '     pathToBuildDir: \x1b[33m".frame-master/build"\x1b[0m',
       "   }\x1b[90m)\x1b[0m",
       "",
     ].join("\n")

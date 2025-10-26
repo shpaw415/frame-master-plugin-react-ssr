@@ -127,7 +127,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   };
 
   const buildWithConfig = (...routes: string[]) => {
-    return builder.build([...routes, PATH_TO_HYDRATE.server]);
+    return builder.build([
+      ...routes,
+      PATH_TO_HYDRATE.server,
+      config.pathToClientWrapper!,
+    ]);
   };
 
   return {

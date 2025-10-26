@@ -1,5 +1,6 @@
 import { type JSX } from "react";
-//import { RouterHost } from "frame-master-plugin-react-ssr/router";
+
+// this Shell is only for SSR purpose
 
 export default function Shell({ children }: { children: JSX.Element }) {
   return (
