@@ -14,14 +14,15 @@
   },
   "peerDependencies": {
     "typescript": "^5",
-    "frame-master": "https://github.com/shpaw415/frame-master.git#33a0f5b"
+    "frame-master": "https://github.com/shpaw415/frame-master.git#b4b442b"
   },
   "exports": {
-    "./shell": "./src/Shell.tsx",
+    "./router": "./src/router/client/index.tsx",
     "./hydrate": "./src/client/hydrate.tsx",
     "./plugin": "./index.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./router/utils": "./src/router/index.ts"
+    "./router/utils": "./src/router/index.ts",
+    "./client/init": "./src/client/init-client.ts"
   },
   "scripts": {
     "dev": "NODE_ENV=development bun --hot frame-master dev",

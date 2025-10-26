@@ -35,8 +35,8 @@ export async function createPageByPathname(pathname: string) {
   );
 }
 /** Get the Shell from the server to put in the hydrate */
-export async function Shell(): Promise<() => JSX.Element> {
-  return (
+export async function Shell(props: { pathname: string }): Promise<JSX.Element> {
+  const ShellElementFunction = (
     await import(
       "/" +
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToShellFile.replace(
@@ -44,5 +44,9 @@ export async function Shell(): Promise<() => JSX.Element> {
           ".js"
         )
     )
-  ).default;
+  ).default as (props: { children: JSX.Element }) => JSX.Element;
+
+  return ShellElementFunction({
+    children: await createPageByPathname(props.pathname),
+  });
 }

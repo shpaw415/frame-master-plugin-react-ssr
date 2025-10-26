@@ -26,7 +26,12 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
-      "frame-master-plugin-react-ssr/shell": ["./src/Shell.tsx"]
+      "frame-master-plugin-react-ssr/shell": ["./src/Shell.tsx"],
+      "frame-master-plugin-react-ssr/client/init": [
+        "./src/client/init-client.ts"
+      ],
+      "frame-master-plugin-react-ssr/router/utils": ["./src/router/index.tsx"],
+      "frame-master-plugin-react-ssr/router": ["./src/router/client/index.ts"]
     }
   },
   "include": ["./src", "index.ts", "./init"]

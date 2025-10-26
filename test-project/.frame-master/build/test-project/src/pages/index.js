@@ -1,13 +1,17 @@
-import"./../../../chunk-r8a4e87j.js";
+import {
+  __toESM,
+  require_jsx_dev_runtime
+} from "./../../../chunk-dbjth5j1.js";
 
 // test-project/src/pages/index.tsx
+var import_jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 function TestPage() {
-  return jsxDEV_7x81h0kn(Fragment_8vg9x3sq, {
+  return import_jsx_dev_runtime.jsxDEV(import_jsx_dev_runtime.Fragment, {
     children: [
-      jsxDEV_7x81h0kn("h1", {
+      import_jsx_dev_runtime.jsxDEV("h1", {
         children: "Test Page"
       }, undefined, false, undefined, this),
-      jsxDEV_7x81h0kn("input", {
+      import_jsx_dev_runtime.jsxDEV("input", {
         type: "text",
         placeholder: "Type something..."
       }, undefined, false, undefined, this)

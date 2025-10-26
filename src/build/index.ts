@@ -7,19 +7,7 @@ import { directiveManager } from "frame-master/utils";
 const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
   minify: process.env.NODE_ENV == "production",
   splitting: true,
-  entrypoints: [
-    /*
-    "react",
-    "react-dom",
-    join(
-      "node_modules",
-      "react",
-      "cjs",
-      "react-jsx-dev-runtime.development.js"
-    ),
-    join("node_modules", "react", "jsx-dev-runtime.js"),
-    */
-  ],
+  entrypoints: [],
   plugins: [],
   define: {},
   external: [],
@@ -175,6 +163,7 @@ class Builder {
                 loader: args.loader as "tsx",
                 trimUnusedImports: false,
                 treeShaking: false,
+                autoImportJSX: true,
               }).transformSync(fileContent),
               loader: "js",
             };

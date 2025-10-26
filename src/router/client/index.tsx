@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 import { join, routeGetter } from "../../utils";
 import { DevProvider } from "../../client/dev";
@@ -18,13 +11,25 @@ import {
 import { useRequest } from "../../hooks";
 
 type RouterHostParams = {
-  initialPath: currentRouteType;
   children: JSX.Element;
 };
 
-export function RouterHost({ initialPath, children }: RouterHostParams) {
+export function RouterHost({ children }: RouterHostParams) {
   console.log("[RouterHost] Render");
-  const [route, setRoute] = useState<currentRouteType>(initialPath);
+  const request = useRequest();
+  const [route, setRoute] = useState<currentRouteType>(
+    request
+      ? {
+          pathname: request.URL.pathname,
+          searchParams: request.URL.searchParams,
+        }
+      : {
+          pathname: window.location.pathname,
+          searchParams: window.location.search
+            ? new URLSearchParams(window.location.search)
+            : new URLSearchParams(),
+        }
+  );
   const [currentPageElement, setCurrentPageElement] =
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
@@ -37,7 +42,6 @@ export function RouterHost({ initialPath, children }: RouterHostParams) {
   // Use ref instead of state to avoid re-renders and stale closures
   const abortControllerRef = useRef(new AbortController());
 
-  const request = useRequest();
   const loadRoutePageModule = useCallback(
     async (path: string) => {
       // Abort any previous ongoing navigation

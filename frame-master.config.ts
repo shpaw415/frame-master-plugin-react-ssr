@@ -10,7 +10,7 @@ export default {
       pathToPagesDir: "test-project/src/pages",
       pathToBuildDir: "test-project/.frame-master/build",
       pathToShellFile: "init/shell.default.tsx",
-      pathToHydrateFile: "src/client/hydrate.tsx",
+      pathToHydrateFile: "init/hydrate.tsx",
       debug: false,
     }),
   ],

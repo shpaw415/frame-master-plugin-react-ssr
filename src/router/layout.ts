@@ -9,8 +9,8 @@ type LayoutStackProps = {
 };
 
 export function StackLayouts({ children, layouts }: LayoutStackProps) {
-  return layouts.reduceRight((children, Layout) => {
-    return Layout({ children });
+  return layouts.reduceRight((acc, Layout) => {
+    return Layout({ children: acc });
   }, children);
 }
 

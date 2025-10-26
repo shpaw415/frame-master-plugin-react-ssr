@@ -12,6 +12,7 @@ import {
   getServerSideProps,
   type ServerSidePropsResult,
 } from "./src/features/serverSideProps/server";
+import { pageToJSXElement } from "./src/router/server/render";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -50,8 +51,7 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   pathToHydrateFile: join(
     "node_modules",
     PackageJson.name,
-    "src",
-    "client",
+    "init",
     "hydrate.tsx"
   ),
   pathToShellFile: PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE,
@@ -72,7 +72,6 @@ declare global {
   var __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
-    request: masterRequest | null;
   }) => JSX.Element;
 }
 
@@ -101,6 +100,28 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
+
+  const serveHTML = (pathname: string, request: masterRequest) => {
+    const page = router?.getFromRoutePath(pathname);
+    if (!page) {
+      return null;
+    }
+    const pathToHydrateFileClientSide =
+      config.pathToHydrateFile!.split(".").slice(0, -1).join(".") + ".js";
+    return renderToReadableStream(
+      pageToJSXElement({
+        Shell: globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__,
+        Page: page,
+        request: request,
+      }),
+      {
+        onError(err) {
+          console.error(err);
+        },
+        bootstrapModules: [pathToHydrateFileClientSide],
+      }
+    );
+  };
 
   return {
     name: "frame-master-plugin-react-ssr",
@@ -228,31 +249,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
     },
   } satisfies FrameMasterPlugin;
-}
-
-function serveHTML(pathname: string, request: masterRequest | null) {
-  const page = router?.getFromRoutePath(pathname);
-  if (!page) {
-    return null;
-  }
-
-  return renderToReadableStream(
-    globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__({
-      children: StackLayouts({
-        children: page.page.default(),
-        layouts: page.layouts.map((l) => l.default),
-      }),
-      request,
-    }),
-    {
-      onError(err) {
-        console.error(err);
-      },
-      bootstrapModules: [
-        `/node_modules/${PackageJson.name}/src/client/hydrate.js`,
-      ],
-    }
-  );
 }
 
 function serveFromBuild(pathname: string, builder: Builder) {
