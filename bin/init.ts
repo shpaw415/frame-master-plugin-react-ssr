@@ -12,7 +12,7 @@ export default async function initPlugin() {
   const projectShellFile = Bun.file(join(Paths.pathToConfigDir, "shell.tsx"));
 
   if (!(await projectShellFile.exists()))
-    await Bun.write(projectShellFile, defaultShellFile);
+    await Bun.write(projectShellFile, await defaultShellFile.text());
 
   // copy client wrapper to the project if it does not exists
   const defaultClientWrapperFile = Bun.file(
@@ -22,13 +22,28 @@ export default async function initPlugin() {
     join(Paths.pathToConfigDir, "client-wrapper.tsx")
   );
   if (!(await projectClientWrapperFile.exists()))
-    await Bun.write(projectClientWrapperFile, defaultClientWrapperFile);
+    await Bun.write(
+      projectClientWrapperFile,
+      await defaultClientWrapperFile.text()
+    );
 
   console.log(
     [
-      '✅ Created [ shell.tsx, client-wrapper.tsx ] in the frame-master config directory ".frame-master".',
-      "import ReactSSRPlugin from 'frame-master-plugin-react-ssr';",
-      '{ pathToShellFile: ".frame-master/shell.tsx", pathToClientWrapper: ".frame-master/client-wrapper.tsx"}',
+      "",
+      "\x1b[32m✅ Successfully created files:\x1b[0m",
+      "   • shell.tsx",
+      "   • client-wrapper.tsx",
+      '   \x1b[90min ".frame-master/" directory\x1b[0m',
+      "",
+      "\x1b[36m📝 Add to your config:\x1b[0m",
+      "",
+      "   \x1b[36mimport\x1b[0m ReactSSRPlugin \x1b[36mfrom\x1b[0m \x1b[33m'frame-master-plugin-react-ssr'\x1b[0m\x1b[36m;\x1b[0m",
+      "",
+      "   \x1b[90mReactSSRPlugin(\x1b[0m{",
+      '     pathToShellFile: \x1b[33m".frame-master/shell.tsx"\x1b[0m,',
+      '     pathToClientWrapper: \x1b[33m".frame-master/client-wrapper.tsx"\x1b[0m',
+      "   }\x1b[90m)\x1b[0m",
+      "",
     ].join("\n")
   );
 }
