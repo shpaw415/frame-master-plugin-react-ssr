@@ -5,17 +5,24 @@ import Paths from "frame-master/paths";
 export default async function initPlugin() {
   console.log("Initializing React SSR plugin...");
 
-  // copy default shell to the project
-  await Bun.write(
-    join(Paths.pathToConfigDir, "shell.tsx"),
-    Bun.file(join(PATH_TO_REACT_SSR_PLUGIN, "init", "shell.default.tsx"))
+  // copy default shell to the project if it does not exists
+  const defaultShellFile = Bun.file(
+    join(PATH_TO_REACT_SSR_PLUGIN, "init", "shell.default.tsx")
   );
+  const projectShellFile = Bun.file(join(Paths.pathToConfigDir, "shell.tsx"));
 
-  // copy client wrapper to the project
-  await Bun.write(
-    join(Paths.pathToConfigDir, "client-wrapper.tsx"),
-    Bun.file(join(PATH_TO_REACT_SSR_PLUGIN, "init", "client-wrapper.tsx"))
+  if (!(await projectShellFile.exists()))
+    await Bun.write(projectShellFile, defaultShellFile);
+
+  // copy client wrapper to the project if it does not exists
+  const defaultClientWrapperFile = Bun.file(
+    join(PATH_TO_REACT_SSR_PLUGIN, "init", "client-wrapper.tsx")
   );
+  const projectClientWrapperFile = Bun.file(
+    join(Paths.pathToConfigDir, "client-wrapper.tsx")
+  );
+  if (!(await projectClientWrapperFile.exists()))
+    await Bun.write(projectClientWrapperFile, defaultClientWrapperFile);
 
   console.log(
     [
