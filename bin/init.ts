@@ -60,7 +60,7 @@ export default async function initPlugin() {
       "",
       "   \x1b[90mReactSSRPlugin(\x1b[0m{",
       '     pathToShellFile: \x1b[33m".frame-master/shell.tsx"\x1b[0m,',
-      '     pathToClientWrapper: \x1b[33m".frame-master/client-wrapper.tsx"\x1b[0m',
+      '     pathToClientWrapper: \x1b[33m".frame-master/client-wrapper.tsx",\x1b[0m',
       '     pathToBuildDir: \x1b[33m".frame-master/build"\x1b[0m',
       "   }\x1b[90m)\x1b[0m",
       "",
