@@ -1,5 +1,6 @@
+import { useRouteEffect } from "../hooks";
 import { join } from "../utils";
-import type { JSX } from "react";
+import { useCallback, useMemo, useState, type JSX } from "react";
 
 type LayoutElementFunction = (props: { children: JSX.Element }) => JSX.Element;
 
@@ -8,11 +9,20 @@ type LayoutStackProps = {
   layouts: Array<LayoutElementFunction>;
 };
 
-export function StackLayouts({ children, layouts }: LayoutStackProps) {
+export function StackLayouts({
+  children,
+  layouts,
+}: LayoutStackProps): JSX.Element {
   if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.enableLayout) return children;
-  return layouts.reduceRight((acc, Layout) => {
-    return Layout({ children: acc });
-  }, children);
+
+  return useMemo(() => {
+    let Stack = children;
+    for (let i = layouts.length - 1; i >= 0; i--) {
+      const Layout = layouts[i]!;
+      Stack = <Layout>{Stack}</Layout>;
+    }
+    return Stack;
+  }, [children, layouts]);
 }
 
 export async function importLayouts(layoutsPaths: string[]) {

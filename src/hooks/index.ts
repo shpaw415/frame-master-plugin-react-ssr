@@ -19,12 +19,15 @@ export function useRoute(): CurrentRouteContextType {
  * Effect that runs when the route changes, but not on initial page load.
  * @param onRouteChange Callback to run when route changes
  */
-export function useRouteEffect(onRouteChange: EffectCallback) {
+export function useRouteEffect(
+  onRouteChange: EffectCallback,
+  deps: Array<unknown> = []
+) {
   const route = useRoute();
   useEffect(() => {
     if (route.isInitial) return;
     return onRouteChange();
-  }, [route.version]);
+  }, [route.version, onRouteChange, ...deps]);
 }
 /**
  * null when loading or if there is no serverSideProps

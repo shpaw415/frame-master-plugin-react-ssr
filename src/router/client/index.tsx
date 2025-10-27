@@ -51,23 +51,20 @@ export function RouterHost({ children }: RouterHostParams) {
       const newController = new AbortController();
       abortControllerRef.current = newController;
 
-      const searchParams = new URLSearchParams();
-      searchParams.set("t", new Date().getTime().toString());
-
-      const url =
+      const url = new URL(
         join(
           globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
           path,
           "index.js"
-        ) +
-        (process.env.NODE_ENV != "production"
-          ? `?${searchParams.toString()}`
-          : "");
+        ),
+        "/"
+      );
+
+      if (process.env.NODE_ENV != "production")
+        url.searchParams.set("t", new Date().getTime().toString());
 
       try {
-        const _module = (await import(
-          url.startsWith("/") ? url : "/" + url
-        )) as {
+        const _module = (await import(url.toString())) as {
           default: () => JSX.Element;
         };
 
