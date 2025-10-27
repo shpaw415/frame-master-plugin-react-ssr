@@ -81,6 +81,9 @@ declare global {
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
   }) => JSX.Element;
+  var __REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__: (props: {
+    children: JSX.Element;
+  }) => JSX.Element;
 }
 
 globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
@@ -109,6 +112,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
 
+  const ShellComponent = import(join(process.cwd(), config.pathToShellFile!));
+  const ClientWrapperComponent = import(
+    join(process.cwd(), config.pathToClientWrapper!)
+  );
+
   const serveHTML = (pathname: string, request: masterRequest) => {
     const page = router?.getFromRoutePath(pathname);
     if (!page) {
@@ -116,6 +124,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     }
     return renderToReadableStream(
       pageToJSXElement({
+        ClientWrapper: globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__,
         Shell: globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__,
         Page: page,
         request: request,
@@ -236,6 +245,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         // Load the shell component
         globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
           await import(join(process.cwd(), config.pathToShellFile as string))
+        ).default;
+        globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__ = (
+          await import(
+            join(process.cwd(), config.pathToClientWrapper as string)
+          )
         ).default;
 
         const routes = router

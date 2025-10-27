@@ -7,10 +7,12 @@ import { RequestProvider } from "../../hooks/providers";
 
 export function pageToJSXElement({
   Shell,
+  ClientWrapper,
   Page,
   request,
 }: {
   Shell: (props: { children: JSX.Element }) => JSX.Element;
+  ClientWrapper: (props: { children: JSX.Element }) => JSX.Element;
   Page: {
     page: { default: () => JSX.Element };
     layouts: Array<{ default: () => JSX.Element }>;
@@ -20,9 +22,11 @@ export function pageToJSXElement({
   return (
     <RequestProvider request={request}>
       <Shell>
-        <StackLayouts layouts={Page.layouts.map((l) => l.default)}>
-          <Page.page.default />
-        </StackLayouts>
+        <ClientWrapper>
+          <StackLayouts layouts={Page.layouts.map((l) => l.default)}>
+            <Page.page.default />
+          </StackLayouts>
+        </ClientWrapper>
       </Shell>
     </RequestProvider>
   );
