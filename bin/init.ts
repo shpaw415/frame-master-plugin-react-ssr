@@ -56,7 +56,7 @@ export default async function initPlugin() {
       "",
       "\x1b[36m📝 Add to your config:\x1b[0m",
       "",
-      "   \x1b[36mimport\x1b[0m ReactSSRPlugin \x1b[36mfrom\x1b[0m \x1b[33m'frame-master-plugin-react-ssr'\x1b[0m\x1b[36m;\x1b[0m",
+      "   \x1b[36mimport\x1b[0m ReactSSRPlugin \x1b[36mfrom\x1b[0m \x1b[33m'frame-master-plugin-react-ssr/plugin'\x1b[0m\x1b[36m;\x1b[0m",
       "",
       "   \x1b[90mReactSSRPlugin(\x1b[0m{",
       '     pathToShellFile: \x1b[33m".frame-master/shell.tsx"\x1b[0m,',
