@@ -7,8 +7,8 @@ export default {
   },
   plugins: [
     ReactSSRPlugin({
-      pathToPagesDir: "test-project/src/pages",
-      pathToBuildDir: "test-project/.frame-master/build",
+      pathToPagesDir: "docs/src/pages",
+      pathToBuildDir: "docs/.frame-master/build",
       pathToShellFile: "init/shell.default.tsx",
       pathToClientWrapper: "init/client-wrapper.tsx",
       debug: false,

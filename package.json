@@ -26,6 +26,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development bun --hot frame-master dev",
-    "start": "NODE_ENV=production bun frame-master start"
+    "start": "NODE_ENV=production bun frame-master start",
+    "docs": "NODE_ENV=production bun frame-master start"
   }
 }
