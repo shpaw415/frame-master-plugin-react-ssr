@@ -31,7 +31,8 @@ export const PATH_TO_REACT_SSR_PLUGIN_DEFAULT_CLIENT_WRAPPER_FILE = join(
 
 const PATH_TO_HYDRATE = {
   server: join(PATH_TO_REACT_SSR_PLUGIN, "init", "hydrate.ts"),
-  client: ["node_modules", PackageJson.name, "init", "hydrate.js"].join("/"),
+  client:
+    "/" + ["node_modules", PackageJson.name, "init", "hydrate.js"].join("/"),
 };
 
 export type ReactSSRPluginOptions = {
