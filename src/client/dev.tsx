@@ -4,7 +4,6 @@ import { createContext, useEffect, useRef, type JSX } from "react";
 const DevContext = createContext<{ ws: WebSocket } | null>(null);
 
 export function DevProvider({ children }: { children: JSX.Element }) {
-  console.log("[DevProvider] Render");
   const router = useRoute();
   const ws = useRef<WebSocket | null>(null);
   const routerRef = useRef(router);

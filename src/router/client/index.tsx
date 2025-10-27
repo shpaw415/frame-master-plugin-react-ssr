@@ -165,11 +165,6 @@ export function RouterHost({ children }: RouterHostParams) {
   }, [loadRoutePageModule, routeSetter]);
 
   const RouteContextMemo = useMemo(() => {
-    console.log("[RouterHost] Creating new RouteContextMemo", {
-      pathname: route.pathname,
-      searchParams: searchParamsString,
-      version: routeVersion,
-    });
     return {
       pathname: route.pathname,
       searchParams: route.searchParams,
