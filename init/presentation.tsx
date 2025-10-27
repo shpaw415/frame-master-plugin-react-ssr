@@ -4,13 +4,13 @@ export default function Home() {
       <StyleGuide />
       <div className="container">
         {/* Logo/Icon */}
-        <div className="logo">FM</div>
+        <div className="logo">FMR</div>
 
         {/* Main Heading */}
         <h1 className="heading">
           Get started with
           <br />
-          <span className="heading-accent">Frame-Master</span>
+          <span className="heading-accent">Frame-Master + React</span>
         </h1>
 
         {/* Subtitle */}
