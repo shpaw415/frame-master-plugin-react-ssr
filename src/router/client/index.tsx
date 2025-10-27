@@ -19,7 +19,6 @@ type RouterHostParams = {
  * @returns
  */
 export function RouterHost({ children }: RouterHostParams) {
-  console.log("[RouterHost] Render");
   const request = useRequest();
   const [route, setRoute] = useState<currentRouteType>(
     request
@@ -38,10 +37,6 @@ export function RouterHost({ children }: RouterHostParams) {
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
-  const renderCountRef = useRef(0);
-  renderCountRef.current++;
-
-  console.log("[RouterHost] Render count:", renderCountRef.current);
 
   // Use ref instead of state to avoid re-renders and stale closures
   const abortControllerRef = useRef(new AbortController());
@@ -81,11 +76,13 @@ export function RouterHost({ children }: RouterHostParams) {
           return;
         }
 
-        const layouts = await layoutGetter(
-          path,
-          routeGetter(request),
-          globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
-        );
+        const layouts = globalThis.__REACT_SSR_PLUGIN_OPTIONS__.enableLayout
+          ? await layoutGetter(
+              path,
+              routeGetter(request),
+              globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+            )
+          : [];
 
         // Check again after async operation
         if (newController.signal.aborted) {

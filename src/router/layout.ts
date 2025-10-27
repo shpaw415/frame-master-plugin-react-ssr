@@ -9,6 +9,7 @@ type LayoutStackProps = {
 };
 
 export function StackLayouts({ children, layouts }: LayoutStackProps) {
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.enableLayout) return children;
   return layouts.reduceRight((acc, Layout) => {
     return Layout({ children: acc });
   }, children);

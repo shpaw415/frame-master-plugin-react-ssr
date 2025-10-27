@@ -53,6 +53,8 @@ export type ReactSSRPluginOptions = {
   buildConfig?: Build_Plugins[];
   /** plugin priority for fireing order */
   priority?: number;
+  /** Use layout feature **default: `true`** */
+  enableLayout?: boolean;
 };
 
 const DEFAULT_CONFIG: ReactSSRPluginOptions = {
@@ -63,6 +65,7 @@ const DEFAULT_CONFIG: ReactSSRPluginOptions = {
   debug: false,
   buildConfig: [],
   priority: 10,
+  enableLayout: true,
 };
 
 declare global {
