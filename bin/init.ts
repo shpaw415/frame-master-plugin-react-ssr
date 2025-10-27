@@ -37,6 +37,14 @@ export default async function initPlugin() {
       "cannot create src/pages it might be unwritable or already exists"
     );
   }
+  const projectPresentationFile = Bun.file(join("src", "pages", "index.tsx"));
+  if (!(await projectPresentationFile.exists()))
+    await Bun.write(
+      projectPresentationFile,
+      await Bun.file(
+        join(PATH_TO_REACT_SSR_PLUGIN, "init", "presentation.tsx")
+      ).text()
+    );
 
   console.log(
     [
