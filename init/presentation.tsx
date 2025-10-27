@@ -1,208 +1,224 @@
 export default function Home() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0a0a0a",
-        color: "#ededed",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      {/* Logo/Icon */}
-      <div
-        style={{
-          width: "120px",
-          height: "120px",
-          borderRadius: "24px",
-          background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: "32px",
-          boxShadow: "0 8px 32px rgba(59, 130, 246, 0.3)",
-          fontSize: "48px",
-          fontWeight: "700",
-          color: "white",
-        }}
-      >
-        FM
-      </div>
+    <>
+      <StyleGuide />
+      <div className="container">
+        {/* Logo/Icon */}
+        <div className="logo">FM</div>
 
-      {/* Main Heading */}
-      <h1
-        style={{
-          fontSize: "56px",
-          fontWeight: "700",
-          margin: "0 0 16px 0",
-          textAlign: "center",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        Get started with
-        <br />
-        <span style={{ color: "#3b82f6" }}>Frame-Master</span>
-      </h1>
+        {/* Main Heading */}
+        <h1 className="heading">
+          Get started with
+          <br />
+          <span className="heading-accent">Frame-Master</span>
+        </h1>
 
-      {/* Subtitle */}
-      <p
-        style={{
-          fontSize: "18px",
-          color: "#a3a3a3",
-          margin: "0 0 48px 0",
-          textAlign: "center",
-          maxWidth: "500px",
-          lineHeight: "1.6",
-        }}
-      >
-        Edit{" "}
-        <code
-          style={{
-            background: "#1a1a1a",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            color: "#3b82f6",
-            fontSize: "16px",
-          }}
-        >
-          src/pages/index.tsx
-        </code>{" "}
-        and save to reload.
-      </p>
+        {/* Subtitle */}
+        <p className="subtitle">
+          Edit <code className="code">src/pages/index.tsx</code> and save to
+          reload.
+        </p>
 
-      {/* Links Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "16px",
-          maxWidth: "900px",
-          width: "100%",
-          marginBottom: "64px",
-        }}
-      >
-        {[
-          {
-            href: "https://github.com/shpaw415/frame-master",
-            title: "Docs",
-            desc: "Find in-depth information about Frame-Master features and API.",
-            icon: "📖",
-          },
-          {
-            href: "https://github.com/shpaw415/frame-master-plugin-react-ssr",
-            title: "Learn",
-            desc: "Learn about React SSR plugin in an interactive course!",
-            icon: "🎓",
-          },
-          {
-            href: "https://github.com/shpaw415/frame-master/examples",
-            title: "Examples",
-            desc: "Discover and deploy example Frame-Master projects.",
-            icon: "🚀",
-          },
-          {
-            href: "https://github.com/shpaw415/frame-master",
-            title: "Deploy",
-            desc: "Instantly deploy your Frame-Master site to production.",
-            icon: "▲",
-          },
-        ].map((link, i) => (
+        {/* Links Grid */}
+        <div className="links-grid">
+          {[
+            {
+              href: "https://github.com/shpaw415/frame-master",
+              title: "Docs",
+              desc: "Find in-depth information about Frame-Master features and API.",
+              icon: "📖",
+            },
+            {
+              href: "https://github.com/shpaw415/frame-master-plugin-react-ssr",
+              title: "Learn",
+              desc: "Learn about React SSR plugin in an interactive course!",
+              icon: "🎓",
+            },
+            {
+              href: "https://github.com/shpaw415/frame-master/examples",
+              title: "Examples",
+              desc: "Discover and deploy example Frame-Master projects.",
+              icon: "🚀",
+            },
+            {
+              href: "https://github.com/shpaw415/frame-master",
+              title: "Deploy",
+              desc: "Instantly deploy your Frame-Master site to production.",
+              icon: "▲",
+            },
+          ].map((link, i) => (
+            <a
+              key={i}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-card"
+            >
+              <div className="link-icon">{link.icon}</div>
+              <h2 className="link-title">
+                {link.title}
+                <span className="link-arrow">→</span>
+              </h2>
+              <p className="link-desc">{link.desc}</p>
+            </a>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <footer className="footer">
           <a
-            key={i}
-            href={link.href}
+            href="https://github.com/shpaw415/frame-master"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              padding: "24px",
-              background: "#1a1a1a",
-              border: "1px solid #262626",
-              borderRadius: "12px",
-              textDecoration: "none",
-              color: "inherit",
-              transition: "all 0.2s",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#3b82f6";
-              e.currentTarget.style.background = "#1e1e1e";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#262626";
-              e.currentTarget.style.background = "#1a1a1a";
-            }}
+            className="footer-link"
           >
-            <div
-              style={{
-                fontSize: "32px",
-                marginBottom: "12px",
-              }}
-            >
-              {link.icon}
-            </div>
-            <h2
-              style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                margin: "0 0 8px 0",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              {link.title}
-              <span style={{ fontSize: "14px", color: "#737373" }}>→</span>
-            </h2>
-            <p
-              style={{
-                fontSize: "14px",
-                color: "#737373",
-                margin: 0,
-                lineHeight: "1.5",
-              }}
-            >
-              {link.desc}
-            </p>
+            By Frame-Master
           </a>
-        ))}
+        </footer>
       </div>
+    </>
+  );
+}
 
-      {/* Footer */}
-      <footer
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "24px",
-          paddingTop: "32px",
-          borderTop: "1px solid #262626",
-          maxWidth: "900px",
-          width: "100%",
-          justifyContent: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <a
-          href="https://github.com/shpaw415/frame-master"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#737373",
-            textDecoration: "none",
-            fontSize: "14px",
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#3b82f6")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
-        >
-          By Frame-Master
-        </a>
-      </footer>
-    </div>
+function StyleGuide() {
+  return (
+    <style>{`
+      body {
+        margin: 0;
+      }
+
+      .container {
+        min-height: 100vh;
+        background: #0a0a0a;
+        color: #ededed;
+        font-family: system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 32px;
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        font-size: 48px;
+        font-weight: 700;
+        color: white;
+      }
+
+      .heading {
+        font-size: 56px;
+        font-weight: 700;
+        margin: 0 0 16px 0;
+        text-align: center;
+        letter-spacing: -0.02em;
+      }
+
+      .heading-accent {
+        color: #3b82f6;
+      }
+
+      .subtitle {
+        font-size: 18px;
+        color: #a3a3a3;
+        margin: 0 0 48px 0;
+        text-align: center;
+        max-width: 500px;
+        line-height: 1.6;
+      }
+
+      .code {
+        background: #1a1a1a;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: #3b82f6;
+        font-size: 16px;
+      }
+
+      .links-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        max-width: 900px;
+        width: 100%;
+        margin-bottom: 64px;
+      }
+
+      .link-card {
+        padding: 24px;
+        background: #1a1a1a;
+        border: 1px solid #262626;
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .link-card:hover {
+        border-color: #3b82f6;
+        background: #1e1e1e;
+      }
+
+      .link-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+      }
+
+      .link-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .link-arrow {
+        font-size: 14px;
+        color: #737373;
+      }
+
+      .link-desc {
+        font-size: 14px;
+        color: #737373;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding-top: 32px;
+        border-top: 1px solid #262626;
+        max-width: 900px;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .footer-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #737373;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+
+      .footer-link:hover {
+        color: #3b82f6;
+      }
+    `}</style>
   );
 }
