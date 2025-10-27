@@ -57,7 +57,7 @@ export function RouterHost({ children }: RouterHostParams) {
           path,
           "index.js"
         ),
-        "/"
+        window.location.origin
       );
 
       if (process.env.NODE_ENV != "production")
