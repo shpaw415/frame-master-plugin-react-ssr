@@ -179,6 +179,31 @@ export function RouterHost({ children }: RouterHostParams) {
     routeVersion,
   ]);
 
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("a");
+
+      if (target instanceof HTMLAnchorElement && target.href) {
+        const url = new URL(target.href);
+
+        if (
+          url.origin === window.location.origin &&
+          !target.target &&
+          !e.metaKey &&
+          !e.ctrlKey &&
+          !e.shiftKey &&
+          !e.altKey
+        ) {
+          e.preventDefault();
+          RouteContextMemo.navigate(url.pathname + url.search + url.hash);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [RouteContextMemo.navigate]);
+
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>
       <DevProvider>
