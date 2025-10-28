@@ -123,8 +123,8 @@ export function RouterHost({ children }: RouterHostParams) {
       setIsInitialRoute(false);
       setRouteVersion((c) => c + 1);
       loadRoutePageModule(to).then(() => {
-        // scroll to top after navigation
-        window.scrollTo(0, 0);
+        // scroll to top after navigation smootly
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     },
     [loadRoutePageModule]
