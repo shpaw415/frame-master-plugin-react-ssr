@@ -122,7 +122,10 @@ export function RouterHost({ children }: RouterHostParams) {
       });
       setIsInitialRoute(false);
       setRouteVersion((c) => c + 1);
-      loadRoutePageModule(to);
+      loadRoutePageModule(to).then(() => {
+        // scroll to top after navigation
+        window.scrollTo(0, 0);
+      });
     },
     [loadRoutePageModule]
   );
