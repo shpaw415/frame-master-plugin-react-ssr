@@ -18,6 +18,8 @@ export type CurrentRouteContextType = currentRouteType & {
   isInitial: boolean;
   /** increment every time navigate or reload is triggered */
   version: number;
+  /** current URL hash/anchor (e.g., "#section-1") */
+  hash: string;
 };
 export const CurrentRouteContext = createContext<CurrentRouteContextType>(
   null as any

@@ -15,6 +15,24 @@ type RouterHostParams = {
 };
 
 /**
+ * Scrolls to an anchor element if hash is present, otherwise scrolls to top
+ */
+function scrollToAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
+  if (hash && hash.startsWith("#")) {
+    const id = hash.substring(1);
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({ behavior, block: "start" });
+      return;
+    }
+  }
+
+  // If no hash or element not found, scroll to top
+  window.scrollTo({ top: 0, behavior });
+}
+
+/**
  * default client Router Host from frame-master-plugin-react-ssr
  * @returns
  */
@@ -37,16 +55,27 @@ export function RouterHost({ children }: RouterHostParams) {
     useState<JSX.Element>(children);
   const [isInitialRoute, setIsInitialRoute] = useState(true);
   const [routeVersion, setRouteVersion] = useState(0);
+  const [currentHash, setCurrentHash] = useState(
+    request ? "" : window.location.hash
+  );
 
   // Use ref instead of state to avoid re-renders and stale closures
   const abortControllerRef = useRef(new AbortController());
+  const navigationTimeoutRef = useRef<number | null>(null);
 
   const loadRoutePageModule = useCallback(
-    async (path: string) => {
+    async (path: string, hash?: string) => {
       // Abort any previous ongoing navigation
       try {
         abortControllerRef.current.abort("page-change");
       } catch {}
+
+      // Clear any pending scroll timeout
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+        navigationTimeoutRef.current = null;
+      }
+
       // Create a new controller for this navigation
       const newController = new AbortController();
       abortControllerRef.current = newController;
@@ -91,6 +120,14 @@ export function RouterHost({ children }: RouterHostParams) {
             <_module.default />
           </StackLayouts>
         );
+
+        // Schedule scroll after component renders
+        // Use requestAnimationFrame to ensure DOM is updated
+        navigationTimeoutRef.current = window.setTimeout(() => {
+          requestAnimationFrame(() => {
+            scrollToAnchor(hash || "", "smooth");
+          });
+        }, 50);
       } catch (error) {
         // Silently ignore abort errors
         if (error instanceof Error && error.name === "AbortError") {
@@ -109,29 +146,37 @@ export function RouterHost({ children }: RouterHostParams) {
 
   const routeSetter = useCallback(
     (to: string, searchParams?: Record<string, string> | URLSearchParams) => {
-      const newSearchParams = new URLSearchParams(searchParams);
+      // Parse the URL to separate pathname, hash, and search params
+      const url = new URL(to, window.location.origin);
+      const pathname = url.pathname;
+      const hash = url.hash;
+
+      // Merge search params
+      const newSearchParams = new URLSearchParams(
+        searchParams || url.searchParams
+      );
+
       const urlPath = newSearchParams.toString()
-        ? `${to}?${newSearchParams.toString()}`
-        : to;
+        ? `${pathname}?${newSearchParams.toString()}${hash}`
+        : `${pathname}${hash}`;
 
       window.history.pushState(null, "", urlPath);
 
       setRoute({
-        pathname: to,
+        pathname,
         searchParams: newSearchParams,
       });
+      setCurrentHash(hash);
       setIsInitialRoute(false);
       setRouteVersion((c) => c + 1);
-      loadRoutePageModule(to).then(() => {
-        // scroll to top after navigation smootly
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      loadRoutePageModule(pathname, hash);
     },
     [loadRoutePageModule]
   );
 
   // Keep route pathname in a ref to avoid dependency issues
   const routePathnameRef = useRef(route.pathname);
+  const currentHashRef = useRef(currentHash);
   const searchParamsString = useMemo(
     () => route.searchParams.toString(),
     [route.searchParams]
@@ -141,11 +186,15 @@ export function RouterHost({ children }: RouterHostParams) {
     routePathnameRef.current = route.pathname;
   }, [route.pathname]);
 
+  useEffect(() => {
+    currentHashRef.current = currentHash;
+  }, [currentHash]);
+
   const reloadRoute = useCallback(() => {
     const currentPath = routePathnameRef.current.startsWith("/")
       ? routePathnameRef.current
       : "/" + routePathnameRef.current;
-    loadRoutePageModule(currentPath);
+    loadRoutePageModule(currentPath, currentHashRef.current);
     setIsInitialRoute(false);
     setRouteVersion((c) => c + 1);
   }, [loadRoutePageModule]);
@@ -154,7 +203,7 @@ export function RouterHost({ children }: RouterHostParams) {
     const handlePopState = (event: PopStateEvent) => {
       event.preventDefault();
       const url = new URL(window.location.href);
-      routeSetter(url.pathname, url.searchParams);
+      routeSetter(url.pathname + url.search + url.hash, url.searchParams);
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -162,7 +211,7 @@ export function RouterHost({ children }: RouterHostParams) {
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [loadRoutePageModule, routeSetter]);
+  }, [routeSetter]);
 
   const RouteContextMemo = useMemo(() => {
     return {
@@ -172,6 +221,7 @@ export function RouterHost({ children }: RouterHostParams) {
       reload: reloadRoute,
       isInitial: isInitialRoute,
       version: routeVersion,
+      hash: currentHash,
     };
   }, [
     route.pathname,
@@ -180,6 +230,7 @@ export function RouterHost({ children }: RouterHostParams) {
     reloadRoute,
     isInitialRoute,
     routeVersion,
+    currentHash,
   ]);
 
   useEffect(() => {
@@ -189,6 +240,24 @@ export function RouterHost({ children }: RouterHostParams) {
       if (target instanceof HTMLAnchorElement && target.href) {
         const url = new URL(target.href);
 
+        // Handle same-page anchor links
+        if (
+          url.origin === window.location.origin &&
+          url.pathname === window.location.pathname &&
+          url.hash
+        ) {
+          e.preventDefault();
+          window.history.pushState(
+            null,
+            "",
+            url.pathname + url.search + url.hash
+          );
+          setCurrentHash(url.hash);
+          scrollToAnchor(url.hash, "smooth");
+          return;
+        }
+
+        // Handle navigation to different pages
         if (
           url.origin === window.location.origin &&
           !target.target &&
@@ -206,6 +275,15 @@ export function RouterHost({ children }: RouterHostParams) {
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [RouteContextMemo.navigate]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>

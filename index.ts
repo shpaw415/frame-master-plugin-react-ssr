@@ -279,9 +279,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
 async function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
   return (
-    (
-      await builder.getFileFromPath(join(builder.buildDir, pathname))
-    )?.stream() || null
+    builder.getFileFromPath(join(builder.buildDir, pathname))?.stream() || null
   );
 }
 
