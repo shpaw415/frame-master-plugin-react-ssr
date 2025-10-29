@@ -19,9 +19,6 @@ type PartialOverRideResponse =
   | undefined;
 
 export type Build_Plugins = Partial<{
-  buildOptions:
-    | Partial<Bun.BuildConfig>
-    | (() => Promise<Partial<Bun.BuildConfig>> | Partial<Bun.BuildConfig>);
   /**
    * Add your own custom onLoad handlers for ts and tsx files in the **src/pages** or any subdirectory in process.cwd() directory.
    *
@@ -111,16 +108,4 @@ export type Build_Plugins = Partial<{
       fileDirectives: DirectiveTool
     ) => Promise<PartialOverRideResponse> | PartialOverRideResponse;
   }>;
-  /**
-   * Triggered on the **Main Thread** before the build step.
-   */
-  before_build: () => //ipc: IPCMain
-  Promise<any> | any;
-  /**
-   * Triggered on the **Main Thread** after the build step and passes every output BuildArtifact for processing.
-   */
-  after_build: (
-    BuildArtifact: Bun.BuildOutput
-    //ipc: IPCMain
-  ) => Promise<any> | any;
 }>;

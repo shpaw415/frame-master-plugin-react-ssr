@@ -12,7 +12,6 @@ import {
   type ServerSidePropsResult,
 } from "./src/features/serverSideProps/server";
 import { pageToJSXElement } from "./src/router/server/render";
-import { builder } from "frame-master/build";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -90,13 +89,14 @@ declare global {
 
 globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
 
-let router: Router | null = null;
-
 export type reactSSRPluginContext = {
   __ROUTES__: Array<string>;
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
 };
+
+let router: Router | null = null;
+let reactSSRBuilder: ReactSSRBuilder | null = null;
 
 /**
  * this plugin adds React server-side rendering capabilities to Frame Master.
@@ -104,17 +104,11 @@ export type reactSSRPluginContext = {
 function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const config = { ...DEFAULT_CONFIG, ...options };
 
-  const reactSSRBuilder = ReactSSRBuilder.createBuilder({
-    plugins: [...(config.buildConfig as Build_Plugins[])] as Build_Plugins[],
-    buildDir: config.pathToBuildDir!,
-    srcDir: config.pathToPagesDir!,
-  });
-
   const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
 
   const serveHTML = (pathname: string, request: masterRequest) => {
-    const page = router?.getFromRoutePath(pathname);
+    const page = router!.getFromRoutePath(pathname);
     if (!page) {
       return null;
     }
@@ -214,10 +208,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             )
             .sendNow();
         } else {
-          const res = serveFromBuild(req.URL.pathname, reactSSRBuilder);
+          const res = await serveFromBuild(req.URL.pathname, reactSSRBuilder!);
           if (!res) return;
           req
-            .setResponse(await res, {
+            .setResponse(res, {
               headers: { "Content-Type": "application/javascript" },
             })
             .preventGlobalValuesInjection()
@@ -228,6 +222,14 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     serverStart: {
       async main() {
+        const builder = (await import("frame-master/build")).builder;
+        reactSSRBuilder = ReactSSRBuilder.createBuilder({
+          plugins: [
+            ...(config.buildConfig as Build_Plugins[]),
+          ] as Build_Plugins[],
+          buildDir: config.pathToBuildDir!,
+          srcDir: config.pathToPagesDir!,
+        });
         if (!router)
           router = await Router.createRouter({
             pageDir: config.pathToPagesDir!,
@@ -258,6 +260,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
+      const builder = (await import("frame-master/build")).builder;
       await router?.reload();
       builder.build().then(() => {
         HMRBroadcast("update");
@@ -267,7 +270,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 }
 
 async function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
-  return (await builder.getFileFromPath(pathname))?.stream() || null;
+  return (
+    (
+      await builder.getFileFromPath(join(builder.buildDir, pathname))
+    )?.stream() || null
+  );
 }
 
 function log(...data: any[]) {

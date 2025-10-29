@@ -24,11 +24,11 @@ class ReactSSRBuilder {
   }
 
   async getFileFromPath(path: string): Promise<Bun.BuildArtifact | null> {
-    const builder = (await import("frame-master/build")).builder;
-    const res = builder.outputs?.find((output) => {
-      output.path === path;
-    });
-    return res || null;
+    return (
+      (await import("frame-master/build")).builder.outputs?.find(
+        (output) => output.path == path
+      ) || null
+    );
   }
 
   async defaultPlugins(): Promise<Bun.BunPlugin> {
