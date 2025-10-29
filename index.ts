@@ -193,9 +193,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           const pathname = req.URL.pathname;
           const page = router?.getFromRoutePath(pathname);
           if (!page) return;
-          const res = await serveHTML(pathname, req);
+          const res = serveHTML(pathname, req);
           if (!res) return;
-          req.setResponse(res, {
+          req.setResponse(await res, {
             headers: { "Content-Type": "text/html" },
           });
         } else if (req.request.headers.get("x-server-side-props")) {
@@ -208,10 +208,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             )
             .sendNow();
         } else {
-          const res = await serveFromBuild(req.URL.pathname, reactSSRBuilder!);
+          const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
           if (!res) return;
           req
-            .setResponse(res, {
+            .setResponse(await res, {
               headers: { "Content-Type": "application/javascript" },
             })
             .preventGlobalValuesInjection()

@@ -1,5 +1,7 @@
 import { join } from "path";
 import type { Build_Plugins } from "./types";
+import Builder, { builder } from "frame-master/build";
+import { directiveManager } from "frame-master/utils";
 
 type BuildProps = {
   plugins: Build_Plugins[];
@@ -23,17 +25,12 @@ class ReactSSRBuilder {
     return builder;
   }
 
-  async getFileFromPath(path: string): Promise<Bun.BuildArtifact | null> {
-    return (
-      (await import("frame-master/build")).builder.outputs?.find(
-        (output) => output.path == path
-      ) || null
-    );
+  getFileFromPath(path: string): Bun.BuildArtifact | null {
+    return builder.outputs?.find((output) => output.path == path) || null;
   }
 
-  async defaultPlugins(): Promise<Bun.BunPlugin> {
+  defaultPlugins(): Bun.BunPlugin {
     const self = this;
-    const Builder = (await import("frame-master/build")).Builder;
     return {
       name: "frame-master-plugin-react-ssr-builder",
       target: "browser",
@@ -102,11 +99,6 @@ class ReactSSRBuilder {
     args: Bun.OnLoadArgs;
     fileExt: "tsx" | "ts" | "others";
   }): Promise<{ contents: string; loader?: Bun.Loader }> {
-    const directiveManager = (await import("frame-master/utils"))
-      .directiveManager;
-
-    const Builder = (await import("frame-master/build")).Builder;
-
     if (await directiveManager.pathIs("server-only", args.path)) {
       return Builder.returnEmptyFile("js", await import(args.path));
     }
