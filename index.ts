@@ -128,22 +128,28 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     );
   };
 
+  const createBuildConfig = () => ({
+    outdir: config.pathToBuildDir!,
+    splitting: true,
+    entrypoints: [
+      PATH_TO_HYDRATE.server,
+      config.pathToClientWrapper!,
+      ...(router
+        ?.getRoutePaths()
+        .map((route) => join(router?.pageDir!, route)) || []),
+    ],
+    plugins: [reactSSRBuilder!.defaultPlugins()],
+  });
+
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
     priority: config.priority,
     build: {
-      buildConfig: () => ({
-        outdir: config.pathToBuildDir!,
-        splitting: true,
-        entrypoints: [
-          PATH_TO_HYDRATE.server,
-          config.pathToClientWrapper!,
-          ...(router
-            ?.getRoutePaths()
-            .map((route) => join(router?.pageDir!, route)) || []),
-        ],
-      }),
+      buildConfig:
+        process.env.NODE_ENV == "production"
+          ? createBuildConfig()
+          : createBuildConfig,
     },
     websocket: {
       onOpen(ws) {
@@ -222,6 +228,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     serverStart: {
       async main() {
+        if (!router)
+          router = await Router.createRouter({
+            pageDir: config.pathToPagesDir!,
+            buildDir: config.pathToBuildDir!,
+          });
         const builder = (await import("frame-master/build")).builder;
         reactSSRBuilder = (
           await import("./src/build")
@@ -232,11 +243,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           buildDir: config.pathToBuildDir!,
           srcDir: config.pathToPagesDir!,
         });
-        if (!router)
-          router = await Router.createRouter({
-            pageDir: config.pathToPagesDir!,
-            buildDir: config.pathToBuildDir!,
-          });
 
         // Populate the global __ROUTES__ variable
         globalThis.__ROUTES__ = Array.from(
