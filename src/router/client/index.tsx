@@ -224,6 +224,23 @@ export function RouterHost({ children }: RouterHostParams) {
     };
   }, [loadRoutePageModule]);
 
+  const navigateToAnchor = useCallback(
+    (anchorId: string, behavior: ScrollBehavior = "smooth") => {
+      // Ensure anchorId starts with #
+      const hash = anchorId.startsWith("#") ? anchorId : `#${anchorId}`;
+
+      // Update state and history
+      const currentUrl = window.location.pathname + window.location.search;
+      window.history.pushState(null, "", currentUrl + hash);
+      setCurrentHash(hash);
+      setRouteVersion((c) => c + 1);
+
+      // Scroll to the anchor
+      scrollToAnchor(hash, behavior);
+    },
+    []
+  );
+
   const RouteContextMemo = useMemo(() => {
     return {
       pathname: route.pathname,
@@ -233,6 +250,7 @@ export function RouterHost({ children }: RouterHostParams) {
       isInitial: isInitialRoute,
       version: routeVersion,
       hash: currentHash,
+      navigateToAnchor,
     };
   }, [
     route.pathname,
@@ -242,6 +260,7 @@ export function RouterHost({ children }: RouterHostParams) {
     isInitialRoute,
     routeVersion,
     currentHash,
+    navigateToAnchor,
   ]);
 
   useEffect(() => {
@@ -258,13 +277,7 @@ export function RouterHost({ children }: RouterHostParams) {
           url.hash
         ) {
           e.preventDefault();
-          window.history.pushState(
-            null,
-            "",
-            url.pathname + url.search + url.hash
-          );
-          setCurrentHash(url.hash);
-          scrollToAnchor(url.hash, "smooth");
+          navigateToAnchor(url.hash);
           return;
         }
 
@@ -285,7 +298,7 @@ export function RouterHost({ children }: RouterHostParams) {
 
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
-  }, [RouteContextMemo.navigate]);
+  }, [RouteContextMemo.navigate, navigateToAnchor]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

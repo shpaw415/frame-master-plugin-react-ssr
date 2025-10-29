@@ -20,6 +20,8 @@ export type CurrentRouteContextType = currentRouteType & {
   version: number;
   /** current URL hash/anchor (e.g., "#section-1") */
   hash: string;
+  /** navigate to Anchor in the current page */
+  navigateToAnchor: (anchorId: string, behavior?: ScrollBehavior) => void;
 };
 export const CurrentRouteContext = createContext<CurrentRouteContextType>(
   null as any
