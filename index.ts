@@ -217,7 +217,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           const res = serveFromBuild(req.URL.pathname, reactSSRBuilder);
           if (!res) return;
           req
-            .setResponse(res, {
+            .setResponse(await res, {
               headers: { "Content-Type": "application/javascript" },
             })
             .preventGlobalValuesInjection()
@@ -266,8 +266,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   } satisfies FrameMasterPlugin;
 }
 
-function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
-  return builder.getFileFromPath(pathname)?.stream() || null;
+async function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
+  return (await builder.getFileFromPath(pathname))?.stream() || null;
 }
 
 function log(...data: any[]) {

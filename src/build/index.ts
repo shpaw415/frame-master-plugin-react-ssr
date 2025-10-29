@@ -1,21 +1,5 @@
 import { join } from "path";
 import type { Build_Plugins } from "./types";
-import packageJson from "../../package.json";
-import { mkdirSync, rmSync } from "fs";
-import { directiveManager } from "frame-master/utils";
-import Builder, { builder } from "frame-master/build";
-
-const DEFAULT_BUILD_OPTIONS: Bun.BuildConfig = {
-  minify: process.env.NODE_ENV == "production",
-  splitting: true,
-  entrypoints: [],
-  plugins: [],
-  define: {},
-  external: [],
-  loader: {},
-  publicPath: "./",
-  env: "PUBLIC_*",
-};
 
 type BuildProps = {
   plugins: Build_Plugins[];
@@ -39,15 +23,17 @@ class ReactSSRBuilder {
     return builder;
   }
 
-  getFileFromPath(path: string): Bun.BuildArtifact | null {
+  async getFileFromPath(path: string): Promise<Bun.BuildArtifact | null> {
+    const builder = (await import("frame-master/build")).builder;
     const res = builder.outputs?.find((output) => {
       output.path === path;
     });
     return res || null;
   }
 
-  defaultPlugins(): Bun.BunPlugin {
+  async defaultPlugins(): Promise<Bun.BunPlugin> {
     const self = this;
+    const Builder = (await import("frame-master/build")).Builder;
     return {
       name: "frame-master-plugin-react-ssr-builder",
       target: "browser",
@@ -116,6 +102,11 @@ class ReactSSRBuilder {
     args: Bun.OnLoadArgs;
     fileExt: "tsx" | "ts" | "others";
   }): Promise<{ contents: string; loader?: Bun.Loader }> {
+    const directiveManager = (await import("frame-master/utils"))
+      .directiveManager;
+
+    const Builder = (await import("frame-master/build")).Builder;
+
     if (await directiveManager.pathIs("server-only", args.path)) {
       return Builder.returnEmptyFile("js", await import(args.path));
     }
