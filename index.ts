@@ -5,7 +5,7 @@ import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import { ReactSSRBuilder } from "./src/build";
+import type { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import {
   getServerSideProps,
@@ -223,7 +223,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     serverStart: {
       async main() {
         const builder = (await import("frame-master/build")).builder;
-        reactSSRBuilder = ReactSSRBuilder.createBuilder({
+        reactSSRBuilder = (
+          await import("./src/build")
+        ).ReactSSRBuilder.createBuilder({
           plugins: [
             ...(config.buildConfig as Build_Plugins[]),
           ] as Build_Plugins[],
