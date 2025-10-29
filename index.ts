@@ -5,13 +5,14 @@ import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import { Builder } from "./src/build";
+import { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import {
   getServerSideProps,
   type ServerSidePropsResult,
 } from "./src/features/serverSideProps/server";
 import { pageToJSXElement } from "./src/router/server/render";
+import { builder } from "frame-master/build";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -103,8 +104,7 @@ export type reactSSRPluginContext = {
 function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const config = { ...DEFAULT_CONFIG, ...options };
 
-  const builder = Builder.createBuilder({
-    enableLogging: config.debug,
+  const reactSSRBuilder = ReactSSRBuilder.createBuilder({
     plugins: [...(config.buildConfig as Build_Plugins[])] as Build_Plugins[],
     buildDir: config.pathToBuildDir!,
     srcDir: config.pathToPagesDir!,
@@ -112,11 +112,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
-
-  const ShellComponent = import(join(process.cwd(), config.pathToShellFile!));
-  const ClientWrapperComponent = import(
-    join(process.cwd(), config.pathToClientWrapper!)
-  );
 
   const serveHTML = (pathname: string, request: masterRequest) => {
     const page = router?.getFromRoutePath(pathname);
@@ -139,18 +134,23 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     );
   };
 
-  const buildWithConfig = (...routes: string[]) => {
-    return builder.build([
-      ...routes,
-      PATH_TO_HYDRATE.server,
-      config.pathToClientWrapper!,
-    ]);
-  };
-
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
     priority: config.priority,
+    build: {
+      buildConfig: () => ({
+        outdir: config.pathToBuildDir!,
+        splitting: true,
+        entrypoints: [
+          PATH_TO_HYDRATE.server,
+          config.pathToClientWrapper!,
+          ...(router
+            ?.getRoutePaths()
+            .map((route) => join(router?.pageDir!, route)) || []),
+        ],
+      }),
+    },
     websocket: {
       onOpen(ws) {
         log("[HMR] Client connected for HMR");
@@ -214,7 +214,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             )
             .sendNow();
         } else {
-          const res = serveFromBuild(req.URL.pathname, builder);
+          const res = serveFromBuild(req.URL.pathname, reactSSRBuilder);
           if (!res) return;
           req
             .setResponse(res, {
@@ -253,28 +253,20 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           )
         ).default;
 
-        const routes = router
-          .getRoutePaths()
-          .map((route) => join(router?.pageDir!, route));
-
-        await buildWithConfig(...routes);
+        await builder.build();
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
       await router?.reload();
-      const routes = router!
-        .getRoutePaths()
-        .map((route) => join(router?.pageDir!, route));
-
-      buildWithConfig(...routes).then(() => {
+      builder.build().then(() => {
         HMRBroadcast("update");
       });
     },
   } satisfies FrameMasterPlugin;
 }
 
-function serveFromBuild(pathname: string, builder: Builder) {
+function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
   return builder.getFileFromPath(pathname)?.stream() || null;
 }
 
