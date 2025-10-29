@@ -201,9 +201,20 @@ export function RouterHost({ children }: RouterHostParams) {
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault();
+      // Don't prevent default or push new state - the browser already changed the URL
       const url = new URL(window.location.href);
-      routeSetter(url.pathname + url.search + url.hash, url.searchParams);
+
+      // Update internal state to match the browser's current URL
+      setRoute({
+        pathname: url.pathname,
+        searchParams: url.searchParams,
+      });
+      setCurrentHash(url.hash);
+      setIsInitialRoute(false);
+      setRouteVersion((c) => c + 1);
+
+      // Load the page module for the new pathname
+      loadRoutePageModule(url.pathname, url.hash);
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -211,7 +222,7 @@ export function RouterHost({ children }: RouterHostParams) {
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [routeSetter]);
+  }, [loadRoutePageModule]);
 
   const RouteContextMemo = useMemo(() => {
     return {
