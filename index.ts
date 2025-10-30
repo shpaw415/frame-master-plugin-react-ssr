@@ -183,10 +183,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
       },
       async request(req) {
-        const jsPage: Bun.MatchedRoute | null = router!.matchClient(
-          req.request
-        );
-        log({ jsPage });
+        let jsPage: Bun.MatchedRoute | null;
         if (req.isResponseSetted()) return;
         else if (
           req.URL.pathname == "/hmr" &&
@@ -204,7 +201,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           req.setResponse(await res, {
             headers: { "Content-Type": "text/html" },
           });
-        } else if (jsPage) {
+        } else if ((jsPage = router!.matchClient(req.request))) {
           req.setResponse(Bun.file(jsPage.filePath).stream(), {
             headers: { "Content-Type": "application/javascript" },
           });
@@ -212,7 +209,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
           if (!res) return;
           req
-            .setResponse(await res, {
+            .setResponse(res, {
               headers: { "Content-Type": "application/javascript" },
             })
             .preventGlobalValuesInjection()
