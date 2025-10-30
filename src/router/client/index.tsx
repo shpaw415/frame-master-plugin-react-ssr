@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
-import { join, routeGetter } from "../../utils";
 import { DevProvider } from "../../client/dev";
 import { StackLayouts, layoutGetter } from "../../router/layout";
-import { ServerSidePropsProvider } from "../../hooks/providers";
 import {
   CurrentRouteContext,
   type currentRouteType,
@@ -11,7 +9,13 @@ import {
 import { useRequest } from "../../hooks";
 
 type RouterHostParams = {
+  /** only keept for the first page load then disposed */
   children: JSX.Element;
+  /**
+   * will be keept on any page change can access the useRoute & useRouteEffect hook
+   *
+   * */
+  ChildrenWrapper?: (props: { children: JSX.Element }) => JSX.Element;
 };
 
 /**
@@ -36,7 +40,10 @@ function scrollToAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
  * default client Router Host from frame-master-plugin-react-ssr
  * @returns
  */
-export function RouterHost({ children }: RouterHostParams) {
+export function RouterHost({
+  children,
+  ChildrenWrapper = ({ children }) => children,
+}: RouterHostParams) {
   const request = useRequest();
   const [route, setRoute] = useState<currentRouteType>(
     request
@@ -58,17 +65,22 @@ export function RouterHost({ children }: RouterHostParams) {
   const [currentHash, setCurrentHash] = useState(
     request ? "" : window.location.hash
   );
+  const [navigationError, setNavigationError] = useState<Error | null>(null);
 
   // Use ref instead of state to avoid re-renders and stale closures
-  const abortControllerRef = useRef(new AbortController());
   const navigationTimeoutRef = useRef<number | null>(null);
+  const isNavigatingRef = useRef(false);
 
   const loadRoutePageModule = useCallback(
     async (path: string, hash?: string) => {
-      // Abort any previous ongoing navigation
-      try {
-        abortControllerRef.current.abort("page-change");
-      } catch {}
+      // Prevent concurrent navigations
+      if (isNavigatingRef.current) {
+        return;
+      }
+      isNavigatingRef.current = true;
+
+      // Clear any previous error
+      setNavigationError(null);
 
       // Clear any pending scroll timeout
       if (navigationTimeoutRef.current) {
@@ -77,17 +89,7 @@ export function RouterHost({ children }: RouterHostParams) {
       }
 
       // Create a new controller for this navigation
-      const newController = new AbortController();
-      abortControllerRef.current = newController;
-
-      const url = new URL(
-        join(
-          globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
-          path,
-          "index.js"
-        ),
-        window.location.origin
-      );
+      const url = new URL(path, window.location.origin);
 
       if (process.env.NODE_ENV != "production")
         url.searchParams.set("t", new Date().getTime().toString());
@@ -97,23 +99,9 @@ export function RouterHost({ children }: RouterHostParams) {
           default: () => JSX.Element;
         };
 
-        // Check if this navigation was aborted
-        if (newController.signal.aborted) {
-          return;
-        }
-
         const layouts = globalThis.__REACT_SSR_PLUGIN_OPTIONS__.enableLayout
-          ? await layoutGetter(
-              path,
-              routeGetter(request),
-              globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
-            )
+          ? await layoutGetter(path, globalThis.__ROUTES__)
           : [];
-
-        // Check again after async operation
-        if (newController.signal.aborted) {
-          return;
-        }
 
         setCurrentPageElement(
           <StackLayouts layouts={layouts.map((_module) => _module.default)}>
@@ -131,14 +119,38 @@ export function RouterHost({ children }: RouterHostParams) {
       } catch (error) {
         // Silently ignore abort errors
         if (error instanceof Error && error.name === "AbortError") {
+          isNavigatingRef.current = false;
           return;
         }
-        // Check if it was aborted
-        if (newController.signal.aborted) {
-          return;
-        }
-        // Re-throw other errors
-        throw error;
+
+        // Handle 404 or module load errors
+        console.error(`Failed to load route: ${path}`, error);
+        setNavigationError(
+          error instanceof Error ? error : new Error("Failed to load page")
+        );
+
+        // Set a 404 error page
+        setCurrentPageElement(
+          <div style={{ padding: "2rem", textAlign: "center" }}>
+            <h1>404 - Page Not Found</h1>
+            <p>The page you're looking for doesn't exist.</p>
+            <p style={{ color: "#666", fontSize: "0.9rem" }}>Path: {path}</p>
+            <button
+              onClick={() => {
+                window.history.back();
+              }}
+              style={{
+                marginTop: "1rem",
+                padding: "0.5rem 1rem",
+                cursor: "pointer",
+              }}
+            >
+              Go Back
+            </button>
+          </div>
+        );
+      } finally {
+        isNavigatingRef.current = false;
       }
     },
     [request]
@@ -312,9 +324,7 @@ export function RouterHost({ children }: RouterHostParams) {
   return (
     <CurrentRouteContext.Provider value={RouteContextMemo}>
       <DevProvider>
-        <ServerSidePropsProvider abortController={abortControllerRef.current}>
-          {currentPageElement}
-        </ServerSidePropsProvider>
+        <ChildrenWrapper>{currentPageElement}</ChildrenWrapper>
       </DevProvider>
     </CurrentRouteContext.Provider>
   );

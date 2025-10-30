@@ -1,4 +1,3 @@
-import Router from "./src/router/server";
 import type { FrameMasterPlugin } from "frame-master/plugin/types";
 import type { masterRequest } from "frame-master/server/request";
 import type { JSX } from "react";
@@ -7,11 +6,8 @@ import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
 import type { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
-import {
-  getServerSideProps,
-  type ServerSidePropsResult,
-} from "./src/features/serverSideProps/server";
 import { pageToJSXElement } from "./src/router/server/render";
+import type Router from "./src/router/server";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -78,7 +74,6 @@ declare global {
   var __ROUTES__: Array<string>;
   var __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   var __HMR_WEBSOCKET_CLIENTS__: Bun.ServerWebSocket<undefined>[];
-  var __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
   var __REACT_SSR_PLUGIN_SHELL_COMPONENT__: (props: {
     children: JSX.Element;
   }) => JSX.Element;
@@ -92,7 +87,6 @@ globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
 export type reactSSRPluginContext = {
   __ROUTES__: Array<string>;
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
-  __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: ServerSidePropsResult;
 };
 
 let router: Router | null = null;
@@ -107,16 +101,19 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const { buildConfig, ...toBePublic } =
     config as Required<ReactSSRPluginOptions>;
 
-  const serveHTML = (pathname: string, request: masterRequest) => {
-    const page = router!.getFromRoutePath(pathname);
-    if (!page) {
-      return null;
-    }
+  const serveHTML = async (match: Bun.MatchedRoute, request: masterRequest) => {
     return renderToReadableStream(
       pageToJSXElement({
         ClientWrapper: globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__,
         Shell: globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__,
-        Page: page,
+        Page: {
+          page: await import(match.filePath),
+          layouts: await Promise.all(
+            router!
+              .getRelatedLayouts(match.pathname)
+              .map((layoutMatch) => import(layoutMatch.filePath))
+          ),
+        },
         request: request,
       }),
       {
@@ -128,18 +125,21 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     );
   };
 
-  const createBuildConfig = () => ({
-    outdir: config.pathToBuildDir!,
-    splitting: true,
-    entrypoints: [
-      PATH_TO_HYDRATE.server,
-      config.pathToClientWrapper!,
-      ...(router
-        ?.getRoutePaths()
-        .map((route) => join(router?.pageDir!, route)) || []),
-    ],
-    plugins: [reactSSRBuilder!.defaultPlugins()],
-  });
+  const createBuildConfig = () =>
+    ({
+      outdir: config.pathToBuildDir!,
+      splitting: true,
+      entrypoints: [
+        PATH_TO_HYDRATE.server,
+        config.pathToClientWrapper!,
+        ...Object.values(router?.fileSystemRouterServer.routes!),
+        "react",
+        "react/jsx-runtime",
+        "react-dom",
+        "node_modules/react/jsx-dev-runtime",
+      ],
+      plugins: [reactSSRBuilder!.defaultPlugins()],
+    } satisfies Bun.BuildConfig);
 
   return {
     name: "frame-master-plugin-react-ssr",
@@ -169,20 +169,17 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     router: {
       async before_request(req) {
-        const SSP = await getServerSideProps(req, router!);
         if (req.isAskingHTML) {
           req.setGlobalValues({
             __ROUTES__: globalThis.__ROUTES__,
             __REACT_SSR_PLUGIN_OPTIONS__:
               toBePublic as Required<ReactSSRPluginOptions>,
-            __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: SSP,
           });
         }
         req.setContext<reactSSRPluginContext>({
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
             config as Required<ReactSSRPluginOptions>,
-          __REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__: SSP,
         });
       },
       async request(req) {
@@ -196,23 +193,13 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             : req.setResponse("Failed to upgrade", { status: 400 }).sendNow();
           return;
         } else if (req.isAskingHTML) {
-          const pathname = req.URL.pathname;
-          const page = router?.getFromRoutePath(pathname);
-          if (!page) return;
-          const res = serveHTML(pathname, req);
+          const pageMatch = router!.matchServer(req.request);
+          if (!pageMatch) return;
+          const res = serveHTML(pageMatch, req);
           if (!res) return;
           req.setResponse(await res, {
             headers: { "Content-Type": "text/html" },
           });
-        } else if (req.request.headers.get("x-server-side-props")) {
-          req
-            .setResponse(
-              JSON.stringify(
-                req.getContext<reactSSRPluginContext>()
-                  .__REACT_SSR_PLUGIN_SERVER_SIDE_PROPS__ || null
-              )
-            )
-            .sendNow();
         } else {
           const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
           if (!res) return;
@@ -229,7 +216,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     serverStart: {
       async main() {
         if (!router)
-          router = await Router.createRouter({
+          router = await (
+            await import("./src/router/server")
+          ).default.createRouter({
             pageDir: config.pathToPagesDir!,
             buildDir: config.pathToBuildDir!,
           });
@@ -244,14 +233,13 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           srcDir: config.pathToPagesDir!,
         });
 
-        // Populate the global __ROUTES__ variable
-        globalThis.__ROUTES__ = Array.from(
-          router.routes.keys().map((path) => path.replace(".tsx", ".js"))
-        );
-
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
           config as Required<ReactSSRPluginOptions>;
+
+        globalThis.__ROUTES__ = Object.keys(
+          router.fileSystemRouterServer.routes
+        );
 
         // Load the shell component
         globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
@@ -269,7 +257,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
       const builder = (await import("frame-master/build")).builder;
-      await router?.reload();
+      router?.reset();
+      globalThis.__ROUTES__ = Object.keys(
+        router!.fileSystemRouterServer.routes
+      );
+      await router?.reset();
       builder.build().then(() => {
         HMRBroadcast("update");
       });
@@ -277,7 +269,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   } satisfies FrameMasterPlugin;
 }
 
-async function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
+function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
   return (
     builder.getFileFromPath(join(builder.buildDir, pathname))?.stream() || null
   );

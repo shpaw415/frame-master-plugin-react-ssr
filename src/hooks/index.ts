@@ -1,5 +1,3 @@
-import { ServerSidePropsContext } from "./contexts";
-import type { ServerSidePropsResult } from "../features/serverSideProps/server";
 import {
   RequestContext,
   CurrentRouteContext,
@@ -28,16 +26,4 @@ export function useRouteEffect(
     if (route.isInitial) return;
     return onRouteChange();
   }, [route.version, onRouteChange, ...deps]);
-}
-/**
- * null when loading or if there is no serverSideProps
- * @returns null | serverSideProps
- */
-export function useServerSideProps<
-  AwaitedResult extends unknown = {}
->(): Partial<ServerSidePropsResult & AwaitedResult> | null {
-  const serversideProps = useContext(
-    ServerSidePropsContext
-  ) as ServerSidePropsResult & AwaitedResult;
-  return serversideProps;
 }

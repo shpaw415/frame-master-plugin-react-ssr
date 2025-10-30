@@ -35,16 +35,7 @@ export async function importLayouts(layoutsPaths: string[]) {
   }
 
   return (await Promise.all(
-    layoutsPaths.map(
-      (layoutPath) =>
-        import(
-          "/" +
-            join(
-              globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
-              layoutPath
-            )
-        )
-    )
+    layoutsPaths.map((layoutPath) => import(layoutPath))
   )) as Array<{ default: () => JSX.Element }>;
 }
 
@@ -55,63 +46,19 @@ export async function importLayouts(layoutsPaths: string[]) {
  * @returns an array of layout paths that are related to the given path
  */
 export function getRelatedLayoutPaths(
-  path: string,
-  layouts: string[],
-  basePath: string
+  pathname: string,
+  layouts: string[]
 ): string[] {
-  const relatedLayouts: string[] = [];
-
-  // Normalize paths
-  const normalizedPath = path.startsWith("/") ? path : "/" + path;
-  const normalizedBasePath = basePath.startsWith("/")
-    ? basePath
-    : "/" + basePath;
-  const segments = normalizedPath.split("/").filter(Boolean);
-
-  // Normalize layout paths by removing basePath prefix
-  const normalizedLayouts = layouts.map((layoutPath) => {
-    if (layoutPath.startsWith(normalizedBasePath)) {
-      const withoutBase = layoutPath.slice(normalizedBasePath.length);
-      return withoutBase.startsWith("/") ? withoutBase : "/" + withoutBase;
+  return pathname.split("/").reduce<string[]>((acc, _, index, arr) => {
+    const layoutPath = arr.slice(0, index + 1).join("/") + "/layout";
+    if (layouts.includes(layoutPath)) {
+      acc.push(layoutPath);
     }
-    return layoutPath.startsWith("/") ? layoutPath : "/" + layoutPath;
-  });
-
-  // Helper function to escape regex special characters
-  const escapeRegex = (str: string) =>
-    str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  // Check for root layout
-  const rootLayoutRegex = /^\/layout\.(tsx|js)$/;
-  const rootLayout = normalizedLayouts.find((layout) =>
-    rootLayoutRegex.test(layout)
-  );
-  if (rootLayout) {
-    relatedLayouts.push(rootLayout);
-  }
-
-  // Check for nested layouts
-  let currentPath = "";
-  for (const segment of segments) {
-    currentPath = currentPath ? join(currentPath, segment) : segment;
-    const escapedPath = escapeRegex(currentPath);
-    const layoutRegex = new RegExp(`^/${escapedPath}/layout\\.(tsx|js)$`);
-    const matchedLayout = normalizedLayouts.find((layout) =>
-      layoutRegex.test(layout)
-    );
-    if (matchedLayout) {
-      relatedLayouts.push(matchedLayout);
-    }
-  }
-
-  return relatedLayouts;
+    return acc;
+  }, []);
 }
 
-export function layoutGetter(
-  currentPath: string,
-  layoutsList: Array<string>,
-  basePath: string
-) {
-  const related = getRelatedLayoutPaths(currentPath, layoutsList, basePath);
+export function layoutGetter(pathname: string, layoutsList: Array<string>) {
+  const related = getRelatedLayoutPaths(pathname, layoutsList);
   return importLayouts(related);
 }

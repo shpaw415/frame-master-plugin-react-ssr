@@ -1,6 +1,5 @@
 import type { masterRequest } from "frame-master/server/request";
 import { createContext } from "react";
-import type { ServerSidePropsResult } from "../features/serverSideProps/server";
 
 type RouteSetter = (
   to: string,
@@ -27,6 +26,3 @@ export const CurrentRouteContext = createContext<CurrentRouteContextType>(
   null as any
 );
 export const RequestContext = createContext<masterRequest | null>(null);
-
-export const ServerSidePropsContext =
-  createContext<ServerSidePropsResult>(undefined);

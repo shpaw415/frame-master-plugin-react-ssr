@@ -5,28 +5,14 @@ import type { JSX } from "react";
 
 /** Create the page by pathname to use with the Shell in hydrate */
 export async function createPageByPathname(pathname: string) {
-  const page = (await import(
-    "/" +
-      join(
-        globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir,
-        pathname,
-        "index.js"
-      )
-  )) as {
+  const page = (await import(pathname)) as {
     default: () => JSX.Element;
   };
-  const layoutRoutes = globalThis.__ROUTES__
-    .filter((path) => path.endsWith("layout.js"))
-    .map(
-      (path) =>
-        "/" + join(globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir, path)
-    );
-
-  const layouts = await layoutGetter(
-    pathname,
-    layoutRoutes,
-    globalThis.__REACT_SSR_PLUGIN_OPTIONS__.pathToPagesDir
+  const layoutRoutes = globalThis.__ROUTES__.filter((path) =>
+    path.endsWith("/layout")
   );
+
+  const layouts = await layoutGetter(pathname, layoutRoutes);
 
   return (
     <StackLayouts layouts={layouts.map((_module) => _module.default)}>

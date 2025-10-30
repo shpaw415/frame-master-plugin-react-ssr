@@ -1,11 +1,7 @@
 "server only";
-import type { JSX } from "react";
+
 import { join } from "path";
-import { getRelatedLayoutPaths } from "../layout";
-
-type RoutePage = { default: () => JSX.Element } & Record<string, unknown>;
-
-const AUTHORIZED_ROUTE_NAMES = ["index.tsx", "layout.tsx"];
+import { join as joinClient } from "frame-master/utils";
 
 type RouterProps = {
   pageDir: string;
@@ -13,94 +9,61 @@ type RouterProps = {
 };
 
 class Router {
-  pageDir: string;
-  buildDir: string;
-  routes = new Map<string, RoutePage>();
+  private buildDir: string;
+  private pageDir: string;
+  fileSystemRouterServer: Bun.FileSystemRouter;
+  fileSystemRouterClient: Bun.FileSystemRouter;
   private cwd = process.cwd();
 
   constructor(props: RouterProps) {
+    this.buildDir = props.buildDir;
     this.pageDir = props.pageDir;
-    this.buildDir = join(this.cwd, props.buildDir);
+    this.fileSystemRouterServer = new Bun.FileSystemRouter({
+      dir: join(this.cwd, props.pageDir),
+      style: "nextjs",
+    });
+    this.fileSystemRouterClient = new Bun.FileSystemRouter({
+      dir: join(this.cwd, props.buildDir),
+      style: "nextjs",
+    });
+  }
+
+  public matchServer(request: Request) {
+    if (!request.headers.get("accept")?.includes("text/html")) return null;
+    return this.fileSystemRouterServer.match(request);
+  }
+  public matchClient(request: Request) {
+    const url = new URL(request.url);
+    return this.fileSystemRouterClient.match(
+      "/" + joinClient(this.pageDir, url.pathname)
+    );
   }
 
   static async createRouter(props: RouterProps): Promise<Router> {
     const router = new Router(props);
-    await router._initRoutes();
     return router;
   }
 
-  public reload() {
-    return Promise.all([this._initRoutes()]);
+  public async reset() {
+    this.fileSystemRouterClient.reload();
+    this.fileSystemRouterServer.reload();
   }
+  /** return array of layouts MatchedRoute */
+  public getRelatedLayouts(pathname: string): Array<Bun.MatchedRoute> {
+    const layoutsPathnames = Object.keys(
+      this.fileSystemRouterServer.routes
+    ).filter((pathname) => pathname.endsWith("/layout"));
 
-  private async _initRoutes() {
-    this.routes.clear();
-    const glob = Array.from(
-      new Bun.Glob("**/**.tsx").scanSync({
-        cwd: this.pageDir,
-        onlyFiles: true,
-      })
-    ).filter((file) => {
-      return AUTHORIZED_ROUTE_NAMES.includes(file.split("/").pop()!);
-    });
-    const suffix =
-      process.env.NODE_ENV == "production" ? "" : `?t=${new Date().getTime()}`;
-    const exports = await Promise.all(
-      glob.map(async (file) => {
-        const _module = (await import(
-          join(this.cwd, this.pageDir, file) + suffix
-        )) as RoutePage;
-        return { path: file, exports: _module };
-      })
-    );
-    for (const exp of exports) {
-      this.registerRoute(exp.path, exp.exports);
-    }
-  }
-  fileToRoutePath(file: string) {
-    if (file === "index.tsx") return "/";
-    if (file === "layout.tsx") return "/";
-    return "/" + file.split("/").slice(0, -1).join("/");
-  }
-
-  getRoutePaths() {
-    return Array.from(this.routes.keys());
-  }
-  getFromRoutePath(
-    path: string
-  ): { page: RoutePage; layouts: Array<RoutePage> } | undefined {
-    const page = this.getPageModuleByPathname(path);
-    if (!page) return undefined;
-    const layoutsPaths = Array.from(this.routes.entries())
-      .map(([k, v]) => k)
-      .filter((k) => k.endsWith("layout.tsx"));
-
-    const relatedLayoutPaths = getRelatedLayoutPaths(
-      path,
-      layoutsPaths,
-      this.pageDir
-    ).map((p) => (p.startsWith("/") ? p.slice(1) : p));
-    const ralatedLayouts = relatedLayoutPaths.map(
-      (path) => this.routes.get(path)!
-    );
-
-    return {
-      page,
-      layouts: ralatedLayouts,
-    };
-  }
-  getPageModuleByPathname<Exports extends Record<string, unknown>>(
-    pathname: string
-  ): (RoutePage & Exports) | undefined {
-    const searchPage = join(pathname, "index.tsx");
-    const page = this.routes.get(
-      searchPage.startsWith("/") ? searchPage.slice(1) : searchPage
-    );
-    return page as (RoutePage & Exports) | undefined;
-  }
-
-  registerRoute(path: string, page: RoutePage) {
-    this.routes.set(path, page);
+    return pathname
+      .split("/")
+      .reduce<string[]>((acc, _, index, arr) => {
+        const layoutPath = arr.slice(0, index + 1).join("/") + "/layout";
+        if (layoutsPathnames.includes(layoutPath)) {
+          acc.push(layoutPath);
+        }
+        return acc;
+      }, [])
+      .map((layoutPath) => this.fileSystemRouterServer.match(layoutPath)!);
   }
 }
 

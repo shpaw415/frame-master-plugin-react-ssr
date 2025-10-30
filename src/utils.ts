@@ -20,10 +20,3 @@ export function join(...parts: string[]) {
     .filter((part) => part.length > 0)
     .join("/");
 }
-
-export function routeGetter(request: masterRequest | null) {
-  return request
-    ? (request.getContext() as { __ROUTES__: typeof globalThis.__ROUTES__ })
-        .__ROUTES__
-    : globalThis.__ROUTES__;
-}
