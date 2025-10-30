@@ -1,3 +1,4 @@
+import type { RouteMatch } from "../router/client/route-matcher";
 import {
   RequestContext,
   CurrentRouteContext,
@@ -10,7 +11,7 @@ export function useRequest() {
 }
 
 export function useRoute<
-  Params extends Record<string, string | string[]> = {}
+  Params extends RouteMatch["params"] = {}
 >(): CurrentRouteContextType<Params> {
   return useContext(CurrentRouteContext) as CurrentRouteContextType<Params>;
 }

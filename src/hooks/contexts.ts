@@ -1,20 +1,19 @@
 import type { masterRequest } from "frame-master/server/request";
 import { createContext } from "react";
+import type { RouteMatch } from "../router/client/route-matcher";
 
 type RouteSetter = (
   to: string,
   searchParams?: Record<string, string> | URLSearchParams
 ) => void;
 
-export type RouteParams = Record<string, string | string[]>;
-
-export type currentRouteType<Params extends RouteParams = {}> = {
+export type currentRouteType<Params extends RouteMatch["params"] = {}> = {
   pathname: string;
   searchParams: URLSearchParams;
   params: Params;
 };
 
-export type CurrentRouteContextType<Params extends RouteParams = {}> =
+export type CurrentRouteContextType<Params extends RouteMatch["params"] = {}> =
   currentRouteType<Params> & {
     navigate: RouteSetter;
     reload: () => void;
