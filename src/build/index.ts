@@ -1,23 +1,26 @@
 import { join } from "path";
 import type { Build_Plugins } from "./types";
-import Builder, { builder } from "frame-master/build";
+import Builder from "frame-master/build";
 import { directiveManager } from "frame-master/utils";
 
 type BuildProps = {
   plugins: Build_Plugins[];
   buildDir: string;
   srcDir: string;
+  builder: Builder;
 };
 
 class ReactSSRBuilder {
   plugins: Build_Plugins[];
   buildDir: string;
   srcDir: string;
+  builder: Builder;
 
   constructor(props: BuildProps) {
     this.plugins = [...props.plugins, ...this.defaultTransformPlugin()];
     this.buildDir = join(process.cwd(), props.buildDir);
     this.srcDir = join(process.cwd(), props.srcDir);
+    this.builder = props.builder;
   }
 
   static createBuilder(props: BuildProps): ReactSSRBuilder {
@@ -25,8 +28,8 @@ class ReactSSRBuilder {
     return builder;
   }
 
-  getFileFromPath(builder: Builder, path: string): Bun.BuildArtifact | null {
-    return builder?.outputs?.find((output) => output.path == path) || null;
+  getFileFromPath(path: string): Bun.BuildArtifact | null {
+    return this.builder.outputs?.find((output) => output.path == path) || null;
   }
 
   defaultPlugins(): Bun.BunPlugin {

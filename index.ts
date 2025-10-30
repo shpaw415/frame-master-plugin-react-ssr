@@ -196,6 +196,18 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         log("[HMR] Message from client:", message);
       },
     },
+    serverConfig: {
+      routes: {
+        ...(process.env.NODE_ENV != "production"
+          ? {
+              "/hmr": (_req, server) =>
+                server.upgrade(_req)
+                  ? new Response("Welcome!", { status: 101 })
+                  : new Response("Upgrade failed", { status: 500 }),
+            }
+          : {}),
+      },
+    },
     router: {
       async before_request(req) {
         if (req.isAskingHTML) {
@@ -221,17 +233,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         }
       },
       async request(req) {
-        let jsPage: Bun.MatchedRoute | null;
+        let jsPage: Bun.MatchedRoute | null = null;
         if (req.isResponseSetted()) return;
-        else if (
-          req.URL.pathname == "/hmr" &&
-          process.env.NODE_ENV != "production"
-        ) {
-          req.serverInstance.upgrade(req.request)
-            ? req.setResponse("welcome!").sendNow()
-            : req.setResponse("Failed to upgrade", { status: 400 }).sendNow();
-          return;
-        }
 
         const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
         if (res)
@@ -278,6 +281,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           ] as Build_Plugins[],
           buildDir: config.pathToBuildDir!,
           srcDir: config.pathToPagesDir!,
+          builder: builder!,
         });
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
@@ -320,7 +324,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
   return (
     reactSSRbuilder
-      .getFileFromPath(builder!, join(reactSSRbuilder.buildDir, pathname))
+      .getFileFromPath(join(reactSSRbuilder.buildDir, pathname))
       ?.stream() || null
   );
 }
