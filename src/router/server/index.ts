@@ -40,10 +40,7 @@ class Router {
     return this.fileSystemRouterServer.match(request);
   }
   public matchClient(request: Request) {
-    const url = new URL(request.url);
-    return this.fileSystemRouterClient.match(
-      "/" + joinClient(this.pageDir, url.pathname)
-    );
+    return this.fileSystemRouterClient.match(request);
   }
 
   static async createRouter(props: RouterProps): Promise<Router> {
