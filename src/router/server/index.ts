@@ -48,7 +48,7 @@ class Router {
     return router;
   }
 
-  public async reset() {
+  public reset() {
     this.fileSystemRouterClient.reload();
     this.fileSystemRouterServer.reload();
   }

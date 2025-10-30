@@ -9,6 +9,7 @@ import type { Build_Plugins } from "./src/build/types";
 import { pageToJSXElement } from "./src/router/server/render";
 import type Router from "./src/router/server";
 import type { RouteMatch } from "./src/router/client/route-matcher";
+import { builder } from "frame-master/build";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -161,6 +162,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       plugins: [reactSSRBuilder!.defaultPlugins()],
     } satisfies Bun.BuildConfig);
 
+  let currentDevPath: string | null = null;
+
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
@@ -170,6 +173,12 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         process.env.NODE_ENV == "production"
           ? createBuildConfig()
           : createBuildConfig,
+      ...(process.env.NODE_ENV != "production" && {
+        afterBuild() {
+          router!.createClientFileSystemRouter();
+          HMRBroadcast("update");
+        },
+      }),
     },
     websocket: {
       onOpen(ws) {
@@ -202,6 +211,14 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             config as Required<ReactSSRPluginOptions>,
           __REACT_SSR_PLUGIN_PARAMS__: {},
         });
+
+        // In dev mode, track the current path being requested
+        const matchClient = router?.fileSystemRouterClient.match(req.request);
+        if (process.env.NODE_ENV != "production" && matchClient) {
+          if (matchClient.pathname == currentDevPath) return;
+          currentDevPath = req.URL.pathname;
+          log(`[Dev Mode] Serving path: ${currentDevPath}`);
+        }
       },
       async request(req) {
         let jsPage: Bun.MatchedRoute | null;
@@ -253,7 +270,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             pageDir: config.pathToPagesDir!,
             buildDir: config.pathToBuildDir!,
           });
-        const builder = (await import("frame-master/build")).builder;
         reactSSRBuilder = (
           await import("./src/build")
         ).ReactSSRBuilder.createBuilder({
@@ -282,7 +298,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           )
         ).default;
 
-        await builder.build();
         router.createClientFileSystemRouter();
         log({
           clientRouter: router.fileSystemRouterClient.routes,
@@ -297,10 +312,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       globalThis.__ROUTES__ = Object.keys(
         router!.fileSystemRouterServer.routes
       );
-      await router?.reset();
-      builder.build().then(() => {
-        HMRBroadcast("update");
-      });
+      router?.reset();
+      builder.build();
     },
   } satisfies FrameMasterPlugin;
 }

@@ -109,6 +109,8 @@ export function RouterHost({
       if (process.env.NODE_ENV != "production")
         url.searchParams.set("t", new Date().getTime().toString());
 
+      url.searchParams.set("navigate", "true");
+
       try {
         const _module = (await import(url.toString())) as {
           default: () => JSX.Element;

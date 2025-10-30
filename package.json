@@ -14,7 +14,7 @@
   },
   "peerDependencies": {
     "typescript": "^5",
-    "frame-master": "https://github.com/shpaw415/frame-master.git#12a68da"
+    "frame-master": "https://github.com/shpaw415/frame-master.git#2e45625"
   },
   "exports": {
     "./router": "./src/router/client/index.tsx",
