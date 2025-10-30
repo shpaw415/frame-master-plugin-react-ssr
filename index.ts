@@ -307,7 +307,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
-      const builder = (await import("frame-master/build")).builder;
       router?.reset();
       globalThis.__ROUTES__ = Object.keys(
         router!.fileSystemRouterServer.routes
