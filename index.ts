@@ -313,7 +313,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         router!.fileSystemRouterServer.routes
       );
       router?.reset();
-      builder.build();
+      builder?.build();
     },
   } satisfies FrameMasterPlugin;
 }
