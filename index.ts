@@ -176,6 +176,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       ...(process.env.NODE_ENV != "production" && {
         afterBuild() {
           router!.createClientFileSystemRouter();
+          router?.reset();
           HMRBroadcast("update");
         },
       }),
@@ -299,6 +300,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           )
         ).default;
         await builder?.build();
+
         router.createClientFileSystemRouter();
         log({
           clientRouter: router.fileSystemRouterClient.routes,
@@ -308,12 +310,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
-      router?.reset();
       globalThis.__ROUTES__ = Object.keys(
         router!.fileSystemRouterServer.routes
       );
-      router?.reset();
-      builder?.build();
+      await builder?.build();
     },
   } satisfies FrameMasterPlugin;
 }
