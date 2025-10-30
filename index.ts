@@ -94,6 +94,12 @@ export type reactSSRPluginContext = {
 let router: Router | null = null;
 let reactSSRBuilder: ReactSSRBuilder | null = null;
 
+const WrapFilePathWithDevSuffix = (filePath: string) => {
+  return process.env.NODE_ENV != "production"
+    ? `${filePath}?${Date.now()}`
+    : filePath;
+};
+
 /**
  * this plugin adds React server-side rendering capabilities to Frame Master.
  */
@@ -109,11 +115,14 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         ClientWrapper: globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__,
         Shell: globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__,
         Page: {
-          page: await import(match.filePath),
+          page: await import(WrapFilePathWithDevSuffix(match.filePath)),
           layouts: await Promise.all(
             router!
               .getRelatedLayouts(match.pathname)
-              .map((layoutMatch) => import(layoutMatch.filePath))
+              .map(
+                (layoutMatch) =>
+                  import(WrapFilePathWithDevSuffix(layoutMatch.filePath))
+              )
           ),
         },
         request: request,
@@ -223,7 +232,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           req.setResponse(Bun.file(jsPage.filePath).stream(), {
             headers: { "Content-Type": "application/javascript" },
           });
-        } else {
         }
       },
     },
