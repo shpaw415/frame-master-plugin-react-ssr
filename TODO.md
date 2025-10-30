@@ -1,2 +1,1 @@
-- add client wrapper
-- hydrate file only in the react-ssr plugin no need for init in the project
+- add ?navigate=true to the page route on dev mode to set a dev route to be set ( faster build time )

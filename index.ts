@@ -100,6 +100,15 @@ const WrapFilePathWithDevSuffix = (filePath: string) => {
     : filePath;
 };
 
+function formatParams(params: Record<string, string>): RouteMatch["params"] {
+  return Object.assign(
+    {},
+    ...Object.entries(params).map(([key, value]) =>
+      value.includes("/") ? { [key]: value.split("/") } : { [key]: value }
+    )
+  );
+}
+
 /**
  * this plugin adds React server-side rendering capabilities to Frame Master.
  */
@@ -221,7 +230,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           const pageMatch = router!.matchServer(req.request);
           if (!pageMatch) return;
           req.setContext({
-            __REACT_SSR_PLUGIN_PARAMS__: pageMatch.params,
+            __REACT_SSR_PLUGIN_PARAMS__: formatParams(pageMatch.params),
           });
           const res = serveHTML(pageMatch, req);
           if (!res) return;
