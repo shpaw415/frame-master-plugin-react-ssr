@@ -9,8 +9,10 @@ export function useRequest() {
   return useContext(RequestContext);
 }
 
-export function useRoute(): CurrentRouteContextType {
-  return useContext(CurrentRouteContext);
+export function useRoute<
+  Params extends Record<string, string | string[]> = {}
+>(): CurrentRouteContextType<Params> {
+  return useContext(CurrentRouteContext) as CurrentRouteContextType<Params>;
 }
 
 /**
