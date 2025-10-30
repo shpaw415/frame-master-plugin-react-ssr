@@ -4,7 +4,7 @@ import type { JSX } from "react";
 import { join } from "path";
 import PackageJson from "./package.json";
 import { renderToReadableStream } from "react-dom/server";
-import type { ReactSSRBuilder } from "./src/build";
+import { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import { pageToJSXElement } from "./src/router/server/render";
 import type Router from "./src/router/server";
@@ -273,9 +273,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             pageDir: config.pathToPagesDir!,
             buildDir: config.pathToBuildDir!,
           });
-        reactSSRBuilder = (
-          await import("./src/build")
-        ).ReactSSRBuilder.createBuilder({
+
+        reactSSRBuilder = ReactSSRBuilder.createBuilder({
           plugins: [
             ...(config.buildConfig as Build_Plugins[]),
           ] as Build_Plugins[],
@@ -283,6 +282,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           srcDir: config.pathToPagesDir!,
           builder: builder!,
         });
+        console.log(reactSSRBuilder);
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
