@@ -1,7 +1,6 @@
 "server only";
 
 import { join } from "path";
-import { join as joinClient } from "frame-master/utils";
 
 type RouterProps = {
   pageDir: string;

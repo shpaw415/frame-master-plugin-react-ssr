@@ -7,7 +7,7 @@ import { renderToReadableStream } from "react-dom/server";
 import { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import { pageToJSXElement } from "./src/router/server/render";
-import type Router from "./src/router/server";
+import Router from "./src/router/server";
 import type { RouteMatch } from "./src/router/client/route-matcher";
 import { builder } from "frame-master/build";
 
@@ -267,9 +267,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     serverStart: {
       async main() {
         if (!router)
-          router = await (
-            await import("./src/router/server")
-          ).default.createRouter({
+          router = await Router.createRouter({
             pageDir: config.pathToPagesDir!,
             buildDir: config.pathToBuildDir!,
           });
@@ -282,7 +280,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           srcDir: config.pathToPagesDir!,
           builder: builder!,
         });
-        console.log(reactSSRBuilder);
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
