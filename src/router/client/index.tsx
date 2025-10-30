@@ -7,8 +7,8 @@ import {
   type currentRouteType,
 } from "../../hooks/contexts";
 import { useRequest } from "../../hooks";
-import nextRouteMatcher from "next-route-matcher";
 import type { reactSSRPluginContext } from "../../..";
+import { createRouteMatcher } from "./route-matcher";
 
 type RouterHostParams = {
   /** only keept for the first page load then disposed */
@@ -49,7 +49,7 @@ export function RouterHost({
   const request = useRequest();
   const routeMatcher = useMemo(
     () =>
-      nextRouteMatcher(
+      createRouteMatcher(
         request
           ? []
           : globalThis.__ROUTES__.filter((r) => !r.endsWith("/layout"))
@@ -70,7 +70,7 @@ export function RouterHost({
           searchParams: window.location.search
             ? new URLSearchParams(window.location.search)
             : new URLSearchParams(),
-          params: routeMatcher(window.location.pathname)?.routeParams || {},
+          params: routeMatcher(window.location.pathname)?.params || {},
         }
   );
   const [currentPageElement, setCurrentPageElement] =
@@ -192,7 +192,7 @@ export function RouterHost({
       setRoute({
         pathname,
         searchParams: newSearchParams,
-        params: routeMatcher(pathname)?.routeParams || {},
+        params: routeMatcher(pathname)?.params || {},
       });
       setCurrentHash(hash);
       setIsInitialRoute(false);
@@ -236,7 +236,7 @@ export function RouterHost({
       setRoute({
         pathname: url.pathname,
         searchParams: url.searchParams,
-        params: routeMatcher(url.pathname)?.routeParams || {},
+        params: routeMatcher(url.pathname)?.params || {},
       });
       setCurrentHash(url.hash);
       setIsInitialRoute(false);
