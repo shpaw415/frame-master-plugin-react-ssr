@@ -298,7 +298,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             join(process.cwd(), config.pathToClientWrapper as string)
           )
         ).default;
-
+        await builder?.build();
         router.createClientFileSystemRouter();
         log({
           clientRouter: router.fileSystemRouterClient.routes,

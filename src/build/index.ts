@@ -29,7 +29,6 @@ class ReactSSRBuilder {
   }
 
   getFileFromPath(path: string): Bun.BuildArtifact | null {
-    console.log({ outputs: this.builder.outputs, path });
     return this.builder.outputs?.find((output) => output.path == path) || null;
   }
 
