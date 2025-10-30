@@ -8,7 +8,7 @@ import type { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import { pageToJSXElement } from "./src/router/server/render";
 import type Router from "./src/router/server";
-import type { RouteParams } from "next-route-matcher/dist/lib/get-route-matcher-func";
+import type { RouteMatch } from "./src/router/client/route-matcher";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -88,7 +88,7 @@ globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
 export type reactSSRPluginContext = {
   __ROUTES__: Array<string>;
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
-  __REACT_SSR_PLUGIN_PARAMS__: RouteParams;
+  __REACT_SSR_PLUGIN_PARAMS__: RouteMatch["params"];
 };
 
 let router: Router | null = null;
@@ -182,8 +182,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
             config as Required<ReactSSRPluginOptions>,
-          __REACT_SSR_PLUGIN_PARAMS__:
-            router?.matchServer(req.request)?.params || {},
+          __REACT_SSR_PLUGIN_PARAMS__: {},
         });
       },
       async request(req) {
@@ -197,9 +196,24 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             ? req.setResponse("welcome!").sendNow()
             : req.setResponse("Failed to upgrade", { status: 400 }).sendNow();
           return;
-        } else if (req.isAskingHTML) {
+        }
+
+        const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
+        if (res)
+          req
+            .setResponse(res, {
+              headers: { "Content-Type": "application/javascript" },
+            })
+            .preventGlobalValuesInjection()
+            .preventRewrite()
+            .sendNow();
+
+        if (req.isAskingHTML) {
           const pageMatch = router!.matchServer(req.request);
           if (!pageMatch) return;
+          req.setContext({
+            __REACT_SSR_PLUGIN_PARAMS__: pageMatch.params,
+          });
           const res = serveHTML(pageMatch, req);
           if (!res) return;
           req.setResponse(await res, {
@@ -210,15 +224,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             headers: { "Content-Type": "application/javascript" },
           });
         } else {
-          const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
-          if (!res) return;
-          req
-            .setResponse(res, {
-              headers: { "Content-Type": "application/javascript" },
-            })
-            .preventGlobalValuesInjection()
-            .preventRewrite()
-            .sendNow();
         }
       },
     },
