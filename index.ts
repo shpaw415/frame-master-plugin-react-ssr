@@ -267,6 +267,18 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     serverStart: {
       async main() {
+        // Load the shell component
+        globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
+          await import(join(process.cwd(), config.pathToShellFile as string))
+        ).default;
+        globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__ = (
+          await import(
+            join(process.cwd(), config.pathToClientWrapper as string)
+          )
+        ).default;
+
+        await builder?.build();
+
         if (!router)
           router = await Router.createRouter({
             pageDir: config.pathToPagesDir!,
@@ -289,17 +301,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         globalThis.__ROUTES__ = Object.keys(
           router.fileSystemRouterServer.routes
         );
-
-        // Load the shell component
-        globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
-          await import(join(process.cwd(), config.pathToShellFile as string))
-        ).default;
-        globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__ = (
-          await import(
-            join(process.cwd(), config.pathToClientWrapper as string)
-          )
-        ).default;
-        await builder?.build();
 
         router.createClientFileSystemRouter();
         log({
