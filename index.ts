@@ -8,6 +8,7 @@ import type { ReactSSRBuilder } from "./src/build";
 import type { Build_Plugins } from "./src/build/types";
 import { pageToJSXElement } from "./src/router/server/render";
 import type Router from "./src/router/server";
+import type { RouteParams } from "next-route-matcher/dist/lib/get-route-matcher-func";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -87,6 +88,7 @@ globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
 export type reactSSRPluginContext = {
   __ROUTES__: Array<string>;
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
+  __REACT_SSR_PLUGIN_PARAMS__: RouteParams;
 };
 
 let router: Router | null = null;
@@ -180,6 +182,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           __ROUTES__: globalThis.__ROUTES__,
           __REACT_SSR_PLUGIN_OPTIONS__:
             config as Required<ReactSSRPluginOptions>,
+          __REACT_SSR_PLUGIN_PARAMS__:
+            router?.matchServer(req.request)?.params || {},
         });
       },
       async request(req) {

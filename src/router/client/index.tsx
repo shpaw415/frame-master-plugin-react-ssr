@@ -7,6 +7,8 @@ import {
   type currentRouteType,
 } from "../../hooks/contexts";
 import { useRequest } from "../../hooks";
+import nextRouteMatcher from "next-route-matcher";
+import type { reactSSRPluginContext } from "../../..";
 
 type RouterHostParams = {
   /** only keept for the first page load then disposed */
@@ -45,17 +47,30 @@ export function RouterHost({
   ChildrenWrapper = ({ children }) => children,
 }: RouterHostParams) {
   const request = useRequest();
+  const routeMatcher = useMemo(
+    () =>
+      nextRouteMatcher(
+        request
+          ? []
+          : globalThis.__ROUTES__.filter((r) => !r.endsWith("/layout"))
+      ),
+    []
+  );
   const [route, setRoute] = useState<currentRouteType>(
     request
       ? {
           pathname: request.URL.pathname,
           searchParams: request.URL.searchParams,
+          params:
+            request.getContext<reactSSRPluginContext>()
+              .__REACT_SSR_PLUGIN_PARAMS__,
         }
       : {
           pathname: window.location.pathname,
           searchParams: window.location.search
             ? new URLSearchParams(window.location.search)
             : new URLSearchParams(),
+          params: routeMatcher(window.location.pathname)?.routeParams || {},
         }
   );
   const [currentPageElement, setCurrentPageElement] =
@@ -177,6 +192,7 @@ export function RouterHost({
       setRoute({
         pathname,
         searchParams: newSearchParams,
+        params: routeMatcher(pathname)?.routeParams || {},
       });
       setCurrentHash(hash);
       setIsInitialRoute(false);
@@ -220,6 +236,7 @@ export function RouterHost({
       setRoute({
         pathname: url.pathname,
         searchParams: url.searchParams,
+        params: routeMatcher(url.pathname)?.routeParams || {},
       });
       setCurrentHash(url.hash);
       setIsInitialRoute(false);
@@ -255,14 +272,13 @@ export function RouterHost({
 
   const RouteContextMemo = useMemo(() => {
     return {
-      pathname: route.pathname,
-      searchParams: route.searchParams,
       navigate: routeSetter,
       reload: reloadRoute,
       isInitial: isInitialRoute,
       version: routeVersion,
       hash: currentHash,
       navigateToAnchor,
+      ...route,
     };
   }, [
     route.pathname,

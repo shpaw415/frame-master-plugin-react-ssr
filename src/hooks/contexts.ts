@@ -1,4 +1,5 @@
 import type { masterRequest } from "frame-master/server/request";
+import type { RouteParams } from "next-route-matcher/dist/lib/get-route-matcher-func";
 import { createContext } from "react";
 
 type RouteSetter = (
@@ -9,6 +10,7 @@ type RouteSetter = (
 export type currentRouteType = {
   pathname: string;
   searchParams: URLSearchParams;
+  params: RouteParams;
 };
 
 export type CurrentRouteContextType = currentRouteType & {

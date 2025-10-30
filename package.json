@@ -10,7 +10,8 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "commander": "^14.0.1"
+    "commander": "^14.0.1",
+    "next-route-matcher": "1.0.2"
   },
   "peerDependencies": {
     "typescript": "^5",
