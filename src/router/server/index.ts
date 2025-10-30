@@ -1,5 +1,6 @@
 "server only";
 
+import { mkdirSync } from "fs";
 import { join } from "path";
 
 type RouterProps = {
@@ -17,6 +18,11 @@ class Router {
   constructor(props: RouterProps) {
     this.buildDir = props.buildDir;
     this.pageDir = props.pageDir;
+
+    mkdirSync(join(process.cwd(), props.buildDir!, props.pageDir!), {
+      recursive: true,
+    });
+
     this.fileSystemRouterServer = new Bun.FileSystemRouter({
       dir: join(this.cwd, props.pageDir),
       style: "nextjs",

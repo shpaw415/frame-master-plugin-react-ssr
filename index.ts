@@ -10,7 +10,6 @@ import { pageToJSXElement } from "./src/router/server/render";
 import Router from "./src/router/server";
 import type { RouteMatch } from "./src/router/client/route-matcher";
 import { builder } from "frame-master/build";
-import { mkdirSync } from "fs";
 
 export const PATH_TO_REACT_SSR_PLUGIN = join(
   "node_modules",
@@ -277,10 +276,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             join(process.cwd(), config.pathToClientWrapper as string)
           )
         ).default;
-
-        mkdirSync(join(process.cwd(), config.pathToBuildDir!), {
-          recursive: true,
-        });
 
         if (!router)
           router = await Router.createRouter({
