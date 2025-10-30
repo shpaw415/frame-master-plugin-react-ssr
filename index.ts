@@ -317,9 +317,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   } satisfies FrameMasterPlugin;
 }
 
-function serveFromBuild(pathname: string, builder: ReactSSRBuilder) {
+function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
   return (
-    builder.getFileFromPath(join(builder.buildDir, pathname))?.stream() || null
+    reactSSRbuilder
+      .getFileFromPath(builder!, join(reactSSRbuilder.buildDir, pathname))
+      ?.stream() || null
   );
 }
 

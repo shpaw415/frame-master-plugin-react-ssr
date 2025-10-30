@@ -25,8 +25,8 @@ class ReactSSRBuilder {
     return builder;
   }
 
-  getFileFromPath(path: string): Bun.BuildArtifact | null {
-    return builder.outputs?.find((output) => output.path == path) || null;
+  getFileFromPath(builder: Builder, path: string): Bun.BuildArtifact | null {
+    return builder?.outputs?.find((output) => output.path == path) || null;
   }
 
   defaultPlugins(): Bun.BunPlugin {
