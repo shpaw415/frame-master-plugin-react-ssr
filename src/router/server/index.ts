@@ -28,6 +28,13 @@ class Router {
     });
   }
 
+  public reCreateClientFileSystemRouter() {
+    this.fileSystemRouterClient = new Bun.FileSystemRouter({
+      dir: join(this.cwd, this.buildDir),
+      style: "nextjs",
+    });
+  }
+
   public matchServer(request: Request) {
     if (!request.headers.get("accept")?.includes("text/html")) return null;
     return this.fileSystemRouterServer.match(request);
