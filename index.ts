@@ -200,7 +200,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
         const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
         if (res)
-          req
+          return req
             .setResponse(res, {
               headers: { "Content-Type": "application/javascript" },
             })
