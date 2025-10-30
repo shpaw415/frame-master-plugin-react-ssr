@@ -252,7 +252,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         ).default;
 
         await builder.build();
-        router.reCreateClientFileSystemRouter();
+        router.createClientFileSystemRouter();
         log({
           clientRouter: router.fileSystemRouterClient.routes,
           serverRouter: router.fileSystemRouterServer.routes,
