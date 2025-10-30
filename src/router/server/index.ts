@@ -23,14 +23,14 @@ class Router {
       style: "nextjs",
     });
     this.fileSystemRouterClient = new Bun.FileSystemRouter({
-      dir: join(this.cwd, props.buildDir),
+      dir: join(this.cwd, this.buildDir, this.pageDir),
       style: "nextjs",
     });
   }
 
-  public reCreateClientFileSystemRouter() {
+  public createClientFileSystemRouter() {
     this.fileSystemRouterClient = new Bun.FileSystemRouter({
-      dir: join(this.cwd, this.buildDir),
+      dir: join(this.cwd, this.buildDir, this.pageDir),
       style: "nextjs",
     });
   }
