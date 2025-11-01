@@ -208,7 +208,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           : () => createBuildConfig(getDevRoutesEntryPoints()),
       ...(process.env.NODE_ENV != "production" && {
         afterBuild() {
-          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.createClientFileSystemRouter();
+          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
           globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
           HMRBroadcast("update");
         },
@@ -259,17 +259,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
 
         // In dev mode, track the current path being requested
-        const matchClient =
-          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.fileSystemRouterClient.match(
-            req.request
-          );
-        if (process.env.NODE_ENV != "production" && matchClient) {
-          if (
-            matchClient.pathname ==
-            globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
-          )
-            return;
-          globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
+        if (process.env.NODE_ENV != "production") {
+          setDevRoute(req);
           await builder?.build();
           log(
             `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
@@ -385,6 +376,23 @@ function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
     reactSSRbuilder
       .getFileFromPath(join(reactSSRbuilder.buildDir, pathname))
       ?.stream() || null
+  );
+}
+
+function setDevRoute(request: masterRequest) {
+  const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
+  if (!router) return false;
+  const matchClient = router.fileSystemRouterClient.match(request.request);
+  if (!matchClient) return false;
+  if (
+    matchClient.filePath.endsWith("/layout.jsx") ||
+    matchClient.filePath.endsWith("/layout.tsx") ||
+    globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ == matchClient.name
+  )
+    return false;
+  globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
+  log(
+    `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
   );
 }
 
