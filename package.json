@@ -18,6 +18,7 @@
   },
   "exports": {
     "./router": "./src/router/client/index.tsx",
+    "./router/matcher": "./src/router/client/route-matcher.ts",
     "./hydrate": "./src/client/hydrate.tsx",
     "./plugin": "./index.ts",
     "./hooks": "./src/hooks/index.ts",

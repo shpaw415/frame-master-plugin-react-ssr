@@ -151,7 +151,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         PATH_TO_HYDRATE.server,
         config.pathToClientWrapper!,
         ...Array.from(
-          new Bun.Glob("**/*.{ts,tsx}").scanSync({
+          new Bun.Glob("**/*.{tsx,jsx}").scanSync({
             cwd: config.pathToPagesDir!,
             absolute: true,
             onlyFiles: true,

@@ -1,5 +1,3 @@
-import type { masterRequest } from "frame-master/server/request";
-
 export function join(...parts: string[]) {
   return parts
     .map((part, index) => {
