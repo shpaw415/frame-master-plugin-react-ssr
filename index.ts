@@ -142,7 +142,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       }
     );
   };
-
+  let currentDevRoute: string | null = null;
   const createBuildConfig = () =>
     ({
       outdir: config.pathToBuildDir!,
@@ -150,13 +150,17 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       entrypoints: [
         PATH_TO_HYDRATE.server,
         config.pathToClientWrapper!,
-        ...Array.from(
-          new Bun.Glob("**/*.{tsx,jsx}").scanSync({
-            cwd: config.pathToPagesDir!,
-            absolute: true,
-            onlyFiles: true,
-          })
-        ),
+        ...(currentDevRoute
+          ? [
+              router?.fileSystemRouterServer.routes[currentDevRoute] || null,
+            ].filter((p) => p != null)
+          : Array.from(
+              new Bun.Glob("**/*.{tsx,jsx}").scanSync({
+                cwd: config.pathToPagesDir!,
+                absolute: true,
+                onlyFiles: true,
+              })
+            )),
         "react",
         "react/jsx-runtime",
         "react-dom",
@@ -164,8 +168,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       ],
       plugins: [reactSSRBuilder!.defaultPlugins()],
     } satisfies Bun.BuildConfig);
-
-  let currentDevPath: string | null = null;
 
   return {
     name: "frame-master-plugin-react-ssr",
@@ -231,9 +233,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         // In dev mode, track the current path being requested
         const matchClient = router?.fileSystemRouterClient.match(req.request);
         if (process.env.NODE_ENV != "production" && matchClient) {
-          if (matchClient.pathname == currentDevPath) return;
-          currentDevPath = req.URL.pathname;
-          log(`[Dev Mode] Serving path: ${currentDevPath}`);
+          if (matchClient.pathname == currentDevRoute) return;
+          currentDevRoute = req.URL.pathname;
+          log(`[Dev Mode] Serving path: ${currentDevRoute}`);
         }
       },
       async request(req) {
