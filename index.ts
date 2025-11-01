@@ -168,7 +168,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     return [...layouts.map((match) => match.filePath), page];
   };
 
-  const createBuildConfig = (routes?: string[]) =>
+  const createBuildConfig: (routes?: string[]) => Partial<Bun.BuildConfig> = (
+    routes?: string[]
+  ) =>
     ({
       outdir: config.pathToBuildDir!,
       splitting: true,
@@ -202,10 +204,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       frameMasterVersion: "^2.0.0",
     },
     build: {
-      buildConfig:
+      buildConfig: () =>
         process.env.NODE_ENV == "production"
           ? createBuildConfig()
-          : () => createBuildConfig(getDevRoutesEntryPoints()),
+          : createBuildConfig(getDevRoutesEntryPoints()),
       ...(process.env.NODE_ENV != "production" && {
         afterBuild() {
           globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
