@@ -11,10 +11,7 @@ import Router from "./src/router/server";
 import type { RouteMatch } from "./src/router/client/route-matcher";
 import { builder } from "frame-master/build";
 
-export const PATH_TO_REACT_SSR_PLUGIN = join(
-  "node_modules",
-  PackageJson.name
-) as `node_modules/<react-plugin-name>`;
+export const PATH_TO_REACT_SSR_PLUGIN = import.meta.dir;
 
 export const PATH_TO_REACT_SSR_PLUGIN_DEFAULT_SHELL_FILE = join(
   PATH_TO_REACT_SSR_PLUGIN,
