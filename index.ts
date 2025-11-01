@@ -378,10 +378,12 @@ function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
   );
 }
 
+/** Set the Devroute return true if it's a new route and false otherwise */
 function setDevRoute(request: masterRequest) {
   const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
-  if (!router) return false;
-  const matchClient = router.fileSystemRouterClient.match(request.request);
+  if (!router) throw new Error("Router not initialized");
+
+  const matchClient = router.fileSystemRouterServer.match(request.request);
   if (!matchClient) return false;
   if (
     /\/layout\.(jsx|tsx|js)$/.test(matchClient.filePath) ||
