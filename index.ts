@@ -81,6 +81,7 @@ declare global {
   }) => JSX.Element;
   var __REACT_SSR_PLUGIN_SERVER_ROUTER__: Router | undefined;
   var __REACT_SSR_PLUGIN_SERVER_BUILDER__: ReactSSRBuilder | undefined;
+  var __REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__: string | null;
 }
 
 globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
@@ -136,51 +137,46 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         request: request,
       }),
       {
-        onError(err) {
-          console.error(err);
+        onError(error) {
+          console.error(error);
         },
         bootstrapModules: [PATH_TO_HYDRATE.client],
       }
     );
   };
-  let currentDevRoute: string | null = null;
 
-  const getDevRoutesEntryPoints = (devRoute: string | null) => {
-    if (!devRoute || !globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__)
-      return null;
+  const getDevRoutesEntryPoints = () => {
+    if (
+      !globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ ||
+      !globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__
+    )
+      return undefined;
     const page =
       globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterServer
-        .routes[devRoute] || null;
-    if (!page) error("Page not found for dev route: " + devRoute);
+        .routes[globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__] || null;
+    if (!page) {
+      error(
+        "Page not found for dev route: " +
+          globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
+      );
+      return undefined;
+    }
     const layouts =
       globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.getRelatedLayouts(
-        devRoute
+        globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
       );
     return [...layouts.map((match) => match.filePath), page];
   };
 
-  const getDevRouteFromPathname = (pathname: string) => {
-    if (!globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__) return null;
-    const match =
-      globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterServer.match(
-        pathname
-      );
-    if (!match) return null;
-    return match.pathname;
-  };
-
-  const createBuildConfig = () =>
+  const createBuildConfig = (routes?: string[]) =>
     ({
       outdir: config.pathToBuildDir!,
       splitting: true,
       entrypoints: [
         PATH_TO_HYDRATE.server,
         config.pathToClientWrapper!,
-        ...(currentDevRoute
-          ? [
-              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__
-                ?.fileSystemRouterServer.routes[currentDevRoute] || null,
-            ].filter((p) => p != null)
+        ...(routes
+          ? routes
           : Array.from(
               new Bun.Glob("**/*.{tsx,jsx}").scanSync({
                 cwd: config.pathToPagesDir!,
@@ -209,7 +205,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       buildConfig:
         process.env.NODE_ENV == "production"
           ? createBuildConfig()
-          : createBuildConfig,
+          : () => createBuildConfig(getDevRoutesEntryPoints()),
       ...(process.env.NODE_ENV != "production" && {
         afterBuild() {
           globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.createClientFileSystemRouter();
@@ -268,9 +264,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             req.request
           );
         if (process.env.NODE_ENV != "production" && matchClient) {
-          if (matchClient.pathname == currentDevRoute) return;
-          currentDevRoute = req.URL.pathname;
-          log(`[Dev Mode] Serving path: ${currentDevRoute}`);
+          if (
+            matchClient.pathname ==
+            globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
+          )
+            return;
+          globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
+          await builder?.build();
+          log(
+            `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
+          );
         }
       },
       async request(req) {
