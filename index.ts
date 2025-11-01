@@ -384,8 +384,7 @@ function setDevRoute(request: masterRequest) {
   const matchClient = router.fileSystemRouterClient.match(request.request);
   if (!matchClient) return false;
   if (
-    matchClient.filePath.endsWith("/layout.jsx") ||
-    matchClient.filePath.endsWith("/layout.tsx") ||
+    /\/layout\.(jsx|tsx|js)$/.test(matchClient.filePath) ||
     globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ == matchClient.name
   )
     return false;
