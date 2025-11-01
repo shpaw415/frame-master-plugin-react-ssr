@@ -259,8 +259,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
 
         // In dev mode, track the current path being requested
-        if (process.env.NODE_ENV != "production") {
-          setDevRoute(req);
+        if (process.env.NODE_ENV != "production" || !setDevRoute(req)) {
           await builder?.build();
           log(
             `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
@@ -391,9 +390,7 @@ function setDevRoute(request: masterRequest) {
   )
     return false;
   globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
-  log(
-    `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
-  );
+  return true;
 }
 
 function log(...data: any[]) {
