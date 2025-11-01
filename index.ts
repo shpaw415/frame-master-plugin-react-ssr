@@ -150,7 +150,13 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       entrypoints: [
         PATH_TO_HYDRATE.server,
         config.pathToClientWrapper!,
-        ...Object.values(router?.fileSystemRouterServer.routes!),
+        ...Array.from(
+          new Bun.Glob("**/*.{ts,tsx}").scanSync({
+            cwd: config.pathToPagesDir!,
+            absolute: true,
+            onlyFiles: true,
+          })
+        ),
         "react",
         "react/jsx-runtime",
         "react-dom",
