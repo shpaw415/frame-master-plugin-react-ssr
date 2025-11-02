@@ -216,14 +216,20 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         process.env.NODE_ENV == "production"
           ? createBuildConfig()
           : createBuildConfig(getDevRoutesEntryPoints()),
-      ...(process.env.NODE_ENV != "production" && {
-        afterBuild(config, out) {
-          buildOuts = out;
-          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
-          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
-          HMRBroadcast("update");
-        },
-      }),
+      ...(process.env.NODE_ENV != "production"
+        ? {
+            afterBuild(_, out) {
+              buildOuts = out;
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
+              HMRBroadcast("update");
+            },
+          }
+        : {
+            afterBuild(_, result) {
+              buildOuts = result;
+            },
+          }),
     },
     websocket: {
       onOpen(ws) {
