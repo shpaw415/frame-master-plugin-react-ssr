@@ -180,7 +180,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         ...(routes
           ? routes
           : Array.from(
-              new Bun.Glob("**/*.{tsx,jsx}").scanSync({
+              new Bun.Glob("**.{tsx,jsx}").scanSync({
                 cwd: config.pathToPagesDir!,
                 absolute: true,
                 onlyFiles: true,
