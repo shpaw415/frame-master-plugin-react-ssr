@@ -187,9 +187,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
               })
             )),
         "react",
-        "react/jsx-runtime",
         "react-dom",
-        "node_modules/react/jsx-dev-runtime",
       ],
       plugins: [
         globalThis.__REACT_SSR_PLUGIN_SERVER_BUILDER__!.defaultPlugins(),
