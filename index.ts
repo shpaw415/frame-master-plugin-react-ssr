@@ -197,7 +197,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     } satisfies Bun.BuildConfig);
 
   let buildOuts: Bun.BuildOutput | null = null;
-
+  const cwd = process.cwd();
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
@@ -274,10 +274,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       async request(req) {
         let jsPage: Bun.MatchedRoute | null = null;
         if (req.isResponseSetted()) return;
-
+        const searchPath = join(cwd, req.URL.pathname);
         const res =
           buildOuts?.outputs
-            .find((output) => output.path == req.URL.pathname)
+            .find((output) => output.path == searchPath)
             ?.stream() || null;
         if (res)
           return req
