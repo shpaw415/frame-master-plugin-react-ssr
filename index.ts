@@ -164,7 +164,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     const layouts =
       globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.getRelatedLayouts(
         globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
-      );
+      ) ?? [];
     return [...layouts.map((match) => match.filePath), page];
   };
 
@@ -196,6 +196,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       ],
     } satisfies Bun.BuildConfig);
 
+  let buildOuts: Bun.BuildOutput | null = null;
+
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
@@ -209,7 +211,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           ? createBuildConfig()
           : createBuildConfig(getDevRoutesEntryPoints()),
       ...(process.env.NODE_ENV != "production" && {
-        afterBuild() {
+        afterBuild(config, out) {
+          buildOuts = out;
           globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
           globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
           HMRBroadcast("update");
@@ -272,10 +275,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         let jsPage: Bun.MatchedRoute | null = null;
         if (req.isResponseSetted()) return;
 
-        const res = serveFromBuild(
-          req.URL.pathname,
-          globalThis.__REACT_SSR_PLUGIN_SERVER_BUILDER__!
-        );
+        const res =
+          buildOuts?.outputs
+            .find((output) => output.path == req.URL.pathname)
+            ?.stream() || null;
         if (res)
           return req
             .setResponse(res, {
