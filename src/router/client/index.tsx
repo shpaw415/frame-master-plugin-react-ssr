@@ -233,7 +233,7 @@ export function RouterHost({
     const handlePopState = (event: PopStateEvent) => {
       // Don't prevent default or push new state - the browser already changed the URL
       const url = new URL(window.location.href);
-
+      if (process.env.NODE_ENV != "production") location.href = url.toString();
       // Update internal state to match the browser's current URL
       setRoute({
         pathname: url.pathname,
