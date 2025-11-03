@@ -192,27 +192,14 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       ],
     } satisfies Bun.BuildConfig);
 
-  let buildOuts: Bun.BuildOutput | null = null;
   const cwd = process.cwd();
 
   const serveFromBuild = (req: masterRequest) => {
     const searchPath = join(cwd, config.pathToBuildDir!, req.URL.pathname);
     return (
-      buildOuts?.outputs
-        .find((output) => output.path == searchPath)
-        ?.stream() || null
+      builder?.outputs?.find((output) => output.path == searchPath)?.stream() ||
+      null
     );
-  };
-
-  let currentlyBuilding: Promise<true> | null = null;
-  let buildResolver: ((value: true | PromiseLike<true>) => void) | null = null;
-  const setBuildAwaiter = () => {
-    currentlyBuilding = new Promise<true>((resolve) => {
-      buildResolver = () => {
-        resolve(true);
-        currentlyBuilding = null;
-      };
-    });
   };
 
   return {
@@ -223,26 +210,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       frameMasterVersion: "^2.0.0",
     },
     build: {
-      buildConfig: () =>
-        process.env.NODE_ENV === "production"
-          ? createBuildConfig()
-          : createBuildConfig(getDevRoutesEntryPoints()),
-      ...(process.env.NODE_ENV !== "production"
+      ...(process.env.NODE_ENV === "production"
         ? {
-            async beforeBuild() {
-              if (await currentlyBuilding) setBuildAwaiter();
-            },
-            afterBuild(_, out) {
-              buildOuts = out;
-              buildResolver?.(true);
+            buildConfig: () => createBuildConfig(),
+          }
+        : {
+            buildConfig: () => createBuildConfig(getDevRoutesEntryPoints()),
+            afterBuild() {
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
               HMRBroadcast("update");
-            },
-          }
-        : {
-            afterBuild(_, result) {
-              buildOuts = result;
             },
           }),
     },
@@ -291,13 +268,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
 
         // In dev mode, track the current path being requested
-        if (process.env.NODE_ENV != "production" && setDevRoute(req.request)) {
+        if (process.env.NODE_ENV !== "production" && setDevRoute(req.request)) {
           await builder?.build();
           log(
             `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
           );
-        } else if (currentlyBuilding !== null) {
-          await currentlyBuilding;
         }
       },
       async request(req) {
@@ -398,14 +373,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       await builder?.build();
     },
   } satisfies FrameMasterPlugin;
-}
-
-function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
-  return (
-    reactSSRbuilder
-      .getFileFromPath(join(reactSSRbuilder.buildDir, pathname))
-      ?.stream() || null
-  );
 }
 
 /** Set the Devroute return true if it's a new route and false otherwise */
