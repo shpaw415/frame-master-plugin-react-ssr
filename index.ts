@@ -195,7 +195,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const cwd = process.cwd();
 
   let BuildFilesCache: string[] | null = null;
-
   const getBuildFiles = () => {
     return Array.from(
       new Bun.Glob("**/**").scanSync({
@@ -209,33 +208,9 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const serveFromBuild = (request: Request) => {
     const pathname = new URL(request.url).pathname;
     const searchPath = join(cwd, config.pathToBuildDir!, pathname);
-    console.log("Searching for file in build:", searchPath);
-    if (process.env.NODE_ENV === "production" && BuildFilesCache !== null) {
-      const file = BuildFilesCache.find((filePath) => filePath === searchPath);
-      if (file) {
-        return Bun.file(file).stream();
-      } else {
-        return null;
-      }
-    } else if (
-      process.env.NODE_ENV === "production" &&
-      BuildFilesCache === null
-    ) {
-      BuildFilesCache = getBuildFiles();
-      const file = BuildFilesCache.find((filePath) => filePath === searchPath);
-      if (file) {
-        return Bun.file(file).stream();
-      } else {
-        return null;
-      }
-    } else if (process.env.NODE_ENV !== "production") {
-      const file = getBuildFiles().find((filePath) => filePath === searchPath);
-      if (file) {
-        return Bun.file(file).stream();
-      } else {
-        return null;
-      }
-    }
+    return builder?.outputs
+      ?.find((output) => output.path === searchPath)
+      ?.stream();
   };
 
   return {
