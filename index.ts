@@ -194,12 +194,47 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   const cwd = process.cwd();
 
-  const serveFromBuild = (req: masterRequest) => {
-    const searchPath = join(cwd, config.pathToBuildDir!, req.URL.pathname);
-    return (
-      builder?.outputs?.find((output) => output.path == searchPath)?.stream() ||
-      null
+  let BuildFilesCache: string[] | null = null;
+
+  const getBuildFiles = () => {
+    return Array.from(
+      new Bun.Glob("**/*.js").scanSync({
+        cwd: join(process.cwd(), config.pathToBuildDir!),
+        absolute: true,
+        onlyFiles: true,
+      })
     );
+  };
+
+  const serveFromBuild = (request: Request) => {
+    const pathname = new URL(request.url).pathname;
+    const searchPath = join(cwd, config.pathToBuildDir!, pathname);
+    if (process.env.NODE_ENV === "production" && BuildFilesCache !== null) {
+      const file = BuildFilesCache.find((filePath) => filePath === searchPath);
+      if (file) {
+        return Bun.file(file).stream();
+      } else {
+        return null;
+      }
+    } else if (
+      process.env.NODE_ENV === "production" &&
+      BuildFilesCache === null
+    ) {
+      BuildFilesCache = getBuildFiles();
+      const file = BuildFilesCache.find((filePath) => filePath === searchPath);
+      if (file) {
+        return Bun.file(file).stream();
+      } else {
+        return null;
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      const file = getBuildFiles().find((filePath) => filePath === searchPath);
+      if (file) {
+        return Bun.file(file).stream();
+      } else {
+        return null;
+      }
+    }
   };
 
   return {
@@ -278,7 +313,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       async request(req) {
         let jsPage: Bun.MatchedRoute | null = null;
         if (req.isResponseSetted()) return;
-        const res = serveFromBuild(req);
+        const res = serveFromBuild(req.request);
         if (res)
           return req
             .setResponse(res, {
