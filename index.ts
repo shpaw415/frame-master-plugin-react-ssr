@@ -270,16 +270,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                 server.upgrade(_req)
                   ? new Response("Welcome!", { status: 101 })
                   : new Response("Upgrade failed", { status: 500 }),
-              "__frame_master_dev_trigger_build_for_route/:pathname": {
-                async PATCH(req) {
-                  setDevRoute(req);
-                  log(
-                    `[Dev Mode] Triggering build for path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
-                  );
-                  await builder?.build();
-                  return new Response("Build triggered", { status: 200 });
-                },
-              },
             }
           : {}),
       },
