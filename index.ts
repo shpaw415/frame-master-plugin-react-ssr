@@ -250,7 +250,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
               "/__react_ssr_plugin_dev_route__/:pathname": async (req) => {
                 const { pathname } = req.params as { pathname: string };
-                if (setDevRoute(req)) {
+                if (setDevRouteByPathname(pathname)) {
                   await builder?.build();
                   log(
                     `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
@@ -401,6 +401,15 @@ function setDevRoute(request: Request) {
   )
     return false;
   globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
+  return true;
+}
+function setDevRouteByPathname(pathname: string) {
+  const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
+  if (!router) throw new Error("Router not initialized");
+
+  const matchClient = router.fileSystemRouterServer.match(pathname);
+  if (!matchClient) return false;
+  globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = pathname;
   return true;
 }
 
