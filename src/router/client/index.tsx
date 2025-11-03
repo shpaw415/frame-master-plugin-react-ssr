@@ -40,11 +40,11 @@ function scrollToAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
 }
 
 function log(...args: any[]) {
-  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) return;
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug) return;
   console.log("[React SSR Router]:", ...args);
 }
 function error(...args: any[]) {
-  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) return;
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug) return;
   console.error("[React SSR Router] ==== ERROR ====");
   console.error(...args);
   console.error("[React SSR Router] ===============");
@@ -202,9 +202,18 @@ export function RouterHost({
         : `${pathname}${hash}`;
 
       if (process.env.NODE_ENV !== "production") {
-        TriggerBuildForDevRoute(pathname).then(() => {
-          window.location.href = urlPath;
-        });
+        TriggerBuildForDevRoute(pathname)
+          .then(() => {
+            window.location.href = urlPath;
+          })
+          .catch((err) => {
+            error("Failed to trigger build for dev route:", err);
+            if (globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug)
+              alert(
+                `Failed to trigger build for dev route: ${pathname}. See console for details.`
+              );
+            window.location.href = urlPath;
+          });
         return;
       }
 
