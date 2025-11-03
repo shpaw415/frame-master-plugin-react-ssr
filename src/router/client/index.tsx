@@ -189,6 +189,11 @@ export function RouterHost({
         ? `${pathname}?${newSearchParams.toString()}${hash}`
         : `${pathname}${hash}`;
 
+      if (process.env.NODE_ENV !== "production") {
+        window.location.href = urlPath;
+        return;
+      }
+
       window.history.pushState(null, "", urlPath);
 
       setRoute({
@@ -295,6 +300,8 @@ export function RouterHost({
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
+      if (process.env.NODE_ENV !== "production") return;
+
       const target = (e.target as HTMLElement).closest("a");
 
       if (target instanceof HTMLAnchorElement && target.href) {
