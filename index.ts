@@ -193,12 +193,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     } satisfies Bun.BuildConfig);
 
   const cwd = process.cwd();
-
+  let outputs: Bun.BuildOutput | null = null;
   const serveFromBuild = (request: Request) => {
     const pathname = new URL(request.url).pathname;
-    const searchPath = join(cwd, config.pathToBuildDir!, pathname);
-    return builder?.outputs
-      ?.find((output) => output.path === searchPath)
+    const searchPath = join(
+      cwd,
+      config.pathToBuildDir!,
+      pathname.replace(/^\/+/, "")
+    );
+    return outputs?.outputs
+      .find((output) => output.path === searchPath)
       ?.stream();
   };
 
@@ -216,7 +220,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           }
         : {
             buildConfig: () => createBuildConfig(getDevRoutesEntryPoints()),
-            afterBuild() {
+            afterBuild(conf, _outputs) {
+              outputs = _outputs;
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
               HMRBroadcast("update");
@@ -255,6 +260,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                   log(
                     `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
                   );
+                  await Bun.sleep(1000); // wait for build to settle
                   return new Response("Dev route set", { status: 200 });
                 } else {
                   return new Response("Dev route unchanged", { status: 204 });
@@ -397,7 +403,7 @@ function setDevRoute(request: Request) {
   if (!matchClient) return false;
   if (
     /\/layout\.(jsx|tsx|js)$/.test(matchClient.filePath) ||
-    globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ == matchClient.name
+    globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ === matchClient.name
   )
     return false;
   globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
