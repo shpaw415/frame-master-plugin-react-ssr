@@ -255,6 +255,16 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                 server.upgrade(_req)
                   ? new Response("Welcome!", { status: 101 })
                   : new Response("Upgrade failed", { status: 500 }),
+              "__frame_master_dev_trigger_build_for_route/:pathname": {
+                async PATCH(req) {
+                  setDevRoute(req);
+                  log(
+                    `[Dev Mode] Triggering build for path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
+                  );
+                  await builder?.build();
+                  return new Response("Build triggered", { status: 200 });
+                },
+              },
             }
           : {}),
       },
@@ -276,7 +286,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         });
 
         // In dev mode, track the current path being requested
-        if (process.env.NODE_ENV != "production" && setDevRoute(req)) {
+        if (process.env.NODE_ENV != "production" && setDevRoute(req.request)) {
           await builder?.build();
           log(
             `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
@@ -392,11 +402,11 @@ function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
 }
 
 /** Set the Devroute return true if it's a new route and false otherwise */
-function setDevRoute(request: masterRequest) {
+function setDevRoute(request: Request) {
   const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
   if (!router) throw new Error("Router not initialized");
 
-  const matchClient = router.fileSystemRouterServer.match(request.request);
+  const matchClient = router.fileSystemRouterServer.match(request);
   if (!matchClient) return false;
   if (
     /\/layout\.(jsx|tsx|js)$/.test(matchClient.filePath) ||
