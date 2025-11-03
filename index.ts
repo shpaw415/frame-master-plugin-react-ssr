@@ -198,8 +198,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   const getBuildFiles = () => {
     return Array.from(
-      new Bun.Glob("**/*.js").scanSync({
-        cwd: join(process.cwd(), config.pathToBuildDir!),
+      new Bun.Glob("**/**").scanSync({
+        cwd: join(cwd, config.pathToBuildDir!),
         absolute: true,
         onlyFiles: true,
       })
@@ -209,6 +209,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   const serveFromBuild = (request: Request) => {
     const pathname = new URL(request.url).pathname;
     const searchPath = join(cwd, config.pathToBuildDir!, pathname);
+    console.log("Searching for file in build:", searchPath);
     if (process.env.NODE_ENV === "production" && BuildFilesCache !== null) {
       const file = BuildFilesCache.find((filePath) => filePath === searchPath);
       if (file) {
