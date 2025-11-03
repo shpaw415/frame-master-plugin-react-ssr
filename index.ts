@@ -217,6 +217,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       ...(process.env.NODE_ENV === "production"
         ? {
             buildConfig: () => createBuildConfig(),
+            afterBuild(_conf, _outputs) {
+              outputs = _outputs;
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
+            },
           }
         : {
             buildConfig: () => createBuildConfig(getDevRoutesEntryPoints()),
