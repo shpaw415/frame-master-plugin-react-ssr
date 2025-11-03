@@ -303,8 +303,6 @@ export function RouterHost({
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (process.env.NODE_ENV !== "production") return;
-
       const target = (e.target as HTMLElement).closest("a");
 
       if (target instanceof HTMLAnchorElement && target.href) {
