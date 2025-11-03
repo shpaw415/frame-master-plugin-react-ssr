@@ -204,6 +204,17 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     );
   };
 
+  let currentlyBuilding: Promise<true> | null = null;
+  let buildResolver: ((value: true | PromiseLike<true>) => void) | null = null;
+  const setBuildAwaiter = () => {
+    currentlyBuilding = new Promise<true>((resolve) => {
+      buildResolver = () => {
+        resolve(true);
+        currentlyBuilding = null;
+      };
+    });
+  };
+
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
@@ -213,13 +224,17 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     },
     build: {
       buildConfig: () =>
-        process.env.NODE_ENV == "production"
+        process.env.NODE_ENV === "production"
           ? createBuildConfig()
           : createBuildConfig(getDevRoutesEntryPoints()),
-      ...(process.env.NODE_ENV != "production"
+      ...(process.env.NODE_ENV !== "production"
         ? {
+            async beforeBuild() {
+              if (await currentlyBuilding) setBuildAwaiter();
+            },
             afterBuild(_, out) {
               buildOuts = out;
+              buildResolver?.(true);
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
               globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
               HMRBroadcast("update");
@@ -291,6 +306,8 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           log(
             `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
           );
+        } else if (currentlyBuilding !== null) {
+          await currentlyBuilding;
         }
       },
       async request(req) {
