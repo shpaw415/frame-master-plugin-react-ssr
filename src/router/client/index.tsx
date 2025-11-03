@@ -39,6 +39,17 @@ function scrollToAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
   window.scrollTo({ top: 0, behavior });
 }
 
+function log(...args: any[]) {
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) return;
+  console.log("[React SSR Router]:", ...args);
+}
+function error(...args: any[]) {
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) return;
+  console.error("[React SSR Router] ==== ERROR ====");
+  console.error(...args);
+  console.error("[React SSR Router] ===============");
+}
+
 /**
  * default client Router Host from frame-master-plugin-react-ssr
  * @returns
@@ -302,6 +313,7 @@ export function RouterHost({
   ]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest("a");
 

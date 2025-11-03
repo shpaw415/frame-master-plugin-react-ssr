@@ -260,7 +260,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                   log(
                     `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
                   );
-                  await Bun.sleep(1000); // wait for build to settle
                   return new Response("Dev route set", { status: 200 });
                 } else {
                   return new Response("Dev route unchanged", { status: 204 });
