@@ -285,14 +285,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             config as Required<ReactSSRPluginOptions>,
           __REACT_SSR_PLUGIN_PARAMS__: {},
         });
-
-        // In dev mode, track the current path being requested
-        if (process.env.NODE_ENV !== "production" && setDevRoute(req.request)) {
-          await builder?.build();
-          log(
-            `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
-          );
-        }
       },
       async request(req) {
         let jsPage: Bun.MatchedRoute | null = null;
