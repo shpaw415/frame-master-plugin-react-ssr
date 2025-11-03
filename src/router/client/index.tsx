@@ -9,6 +9,7 @@ import {
 import { useRequest } from "../../hooks";
 import type { reactSSRPluginContext } from "../../..";
 import { createRouteMatcher } from "./route-matcher";
+import { TriggerBuildForDevRoute } from "./dev";
 
 type RouterHostParams = {
   /** only keept for the first page load then disposed */
@@ -190,7 +191,9 @@ export function RouterHost({
         : `${pathname}${hash}`;
 
       if (process.env.NODE_ENV !== "production") {
-        window.location.href = urlPath;
+        TriggerBuildForDevRoute(pathname).then(() => {
+          window.location.href = urlPath;
+        });
         return;
       }
 

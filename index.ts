@@ -194,17 +194,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 
   const cwd = process.cwd();
 
-  let BuildFilesCache: string[] | null = null;
-  const getBuildFiles = () => {
-    return Array.from(
-      new Bun.Glob("**/**").scanSync({
-        cwd: join(cwd, config.pathToBuildDir!),
-        absolute: true,
-        onlyFiles: true,
-      })
-    );
-  };
-
   const serveFromBuild = (request: Request) => {
     const pathname = new URL(request.url).pathname;
     const searchPath = join(cwd, config.pathToBuildDir!, pathname);
@@ -258,6 +247,19 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                 server.upgrade(_req)
                   ? new Response("Welcome!", { status: 101 })
                   : new Response("Upgrade failed", { status: 500 }),
+
+              "/__react_ssr_plugin_dev_route__/:pathname": async (req) => {
+                const { pathname } = req.params as { pathname: string };
+                if (setDevRoute(req)) {
+                  await builder?.build();
+                  log(
+                    `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
+                  );
+                  return new Response("Dev route set", { status: 200 });
+                } else {
+                  return new Response("Dev route unchanged", { status: 204 });
+                }
+              },
             }
           : {}),
       },
