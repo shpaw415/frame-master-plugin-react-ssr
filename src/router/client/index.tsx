@@ -9,6 +9,7 @@ import {
 import { useRequest } from "../../hooks";
 import type { reactSSRPluginContext } from "../../..";
 import { createRouteMatcher } from "./route-matcher";
+import { TriggerBuildForDevRoute } from "./dev";
 
 type RouterHostParams = {
   /** only keept for the first page load then disposed */
@@ -36,6 +37,17 @@ function scrollToAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
 
   // If no hash or element not found, scroll to top
   window.scrollTo({ top: 0, behavior });
+}
+
+function log(...args: any[]) {
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug) return;
+  console.log("[React SSR Router]:", ...args);
+}
+function error(...args: any[]) {
+  if (!globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug) return;
+  console.error("[React SSR Router] ==== ERROR ====");
+  console.error(...args);
+  console.error("[React SSR Router] ===============");
 }
 
 /**
@@ -189,6 +201,22 @@ export function RouterHost({
         ? `${pathname}?${newSearchParams.toString()}${hash}`
         : `${pathname}${hash}`;
 
+      if (process.env.NODE_ENV !== "production") {
+        TriggerBuildForDevRoute(pathname)
+          .then(() => {
+            window.location.href = urlPath;
+          })
+          .catch((err) => {
+            error("Failed to trigger build for dev route:", err);
+            if (globalThis.__REACT_SSR_PLUGIN_OPTIONS__?.debug)
+              alert(
+                `Failed to trigger build for dev route: ${pathname}. See console for details.`
+              );
+            window.location.href = urlPath;
+          });
+        return;
+      }
+
       window.history.pushState(null, "", urlPath);
 
       setRoute({
@@ -233,7 +261,7 @@ export function RouterHost({
     const handlePopState = (event: PopStateEvent) => {
       // Don't prevent default or push new state - the browser already changed the URL
       const url = new URL(window.location.href);
-
+      if (process.env.NODE_ENV != "production") location.href = url.toString();
       // Update internal state to match the browser's current URL
       setRoute({
         pathname: url.pathname,
@@ -294,6 +322,7 @@ export function RouterHost({
   ]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest("a");
 
