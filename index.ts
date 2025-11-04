@@ -196,11 +196,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
   let outputs: Bun.BuildOutput | null = null;
   const serveFromBuild = (request: Request) => {
     const pathname = new URL(request.url).pathname;
-    const searchPath = join(
-      cwd,
-      config.pathToBuildDir!,
-      pathname.replace(/^\/+/, "")
-    );
+    const searchPath = join(cwd, config.pathToBuildDir!, pathname);
     return outputs?.outputs
       .find((output) => output.path === searchPath)
       ?.stream();
