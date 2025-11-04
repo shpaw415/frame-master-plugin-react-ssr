@@ -2,7 +2,7 @@
   "name": "frame-master-plugin-react-ssr",
   "module": "index.ts",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "bin": {
     "fmp-react-ssr": "bin/index.ts"
   },
@@ -14,15 +14,15 @@
   },
   "peerDependencies": {
     "typescript": "^5",
-    "frame-master": "^2.0.0"
+    "frame-master": "^2.0.2"
   },
   "exports": {
     "./router": "./src/router/client/index.tsx",
     "./router/matcher": "./src/router/client/route-matcher.ts",
+    "./router/utils": "./src/router/index.ts",
     "./hydrate": "./src/client/hydrate.tsx",
     "./plugin": "./index.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./router/utils": "./src/router/index.ts",
     "./client/init": "./src/client/init-client.ts"
   },
   "scripts": {

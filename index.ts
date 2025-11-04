@@ -79,6 +79,9 @@ declare global {
   var __REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__: (props: {
     children: JSX.Element;
   }) => JSX.Element;
+  var __REACT_SSR_PLUGIN_SERVER_ROUTER__: Router | undefined;
+  var __REACT_SSR_PLUGIN_SERVER_BUILDER__: ReactSSRBuilder | undefined;
+  var __REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__: string | null;
 }
 
 globalThis.__HMR_WEBSOCKET_CLIENTS__ ??= [];
@@ -88,9 +91,6 @@ export type reactSSRPluginContext = {
   __REACT_SSR_PLUGIN_OPTIONS__: Required<ReactSSRPluginOptions>;
   __REACT_SSR_PLUGIN_PARAMS__: RouteMatch["params"];
 };
-
-let router: Router | null = null;
-let reactSSRBuilder: ReactSSRBuilder | null = null;
 
 const WrapFilePathWithDevSuffix = (filePath: string) => {
   return process.env.NODE_ENV != "production"
@@ -124,8 +124,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         Page: {
           page: await import(WrapFilePathWithDevSuffix(match.filePath)),
           layouts: await Promise.all(
-            router!
-              .getRelatedLayouts(match.pathname)
+            globalThis
+              .__REACT_SSR_PLUGIN_SERVER_ROUTER__!.getRelatedLayouts(
+                match.pathname
+              )
               .map(
                 (layoutMatch) =>
                   import(WrapFilePathWithDevSuffix(layoutMatch.filePath))
@@ -135,54 +137,97 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         request: request,
       }),
       {
-        onError(err) {
-          console.error(err);
+        onError(error) {
+          console.error(error);
         },
         bootstrapModules: [PATH_TO_HYDRATE.client],
       }
     );
   };
 
-  const createBuildConfig = () =>
+  const getDevRoutesEntryPoints = () => {
+    if (
+      !globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ ||
+      !globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__
+    )
+      return undefined;
+    const page =
+      globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterServer
+        .routes[globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__] || null;
+    if (!page) {
+      error(
+        "Page not found for dev route: " +
+          globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
+      );
+      return undefined;
+    }
+    const layouts =
+      globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.getRelatedLayouts(
+        globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__
+      ) ?? [];
+    return [...layouts.map((match) => match.filePath), page];
+  };
+
+  const createBuildConfig: (routes?: string[]) => Partial<Bun.BuildConfig> = (
+    routes?: string[]
+  ) =>
     ({
       outdir: config.pathToBuildDir!,
       splitting: true,
       entrypoints: [
         PATH_TO_HYDRATE.server,
         config.pathToClientWrapper!,
-        ...Array.from(
-          new Bun.Glob("**/*.{tsx,jsx}").scanSync({
-            cwd: config.pathToPagesDir!,
-            absolute: true,
-            onlyFiles: true,
-          })
-        ),
-        "react",
-        "react/jsx-runtime",
-        "react-dom",
-        "node_modules/react/jsx-dev-runtime",
+        ...(routes
+          ? routes
+          : Array.from(
+              new Bun.Glob("**/*.{tsx,jsx}").scanSync({
+                cwd: config.pathToPagesDir!,
+                absolute: true,
+                onlyFiles: true,
+              })
+            )),
       ],
-      plugins: [reactSSRBuilder!.defaultPlugins()],
+      plugins: [
+        globalThis.__REACT_SSR_PLUGIN_SERVER_BUILDER__!.defaultPlugins(),
+      ],
     } satisfies Bun.BuildConfig);
 
-  let currentDevPath: string | null = null;
+  const cwd = process.cwd();
+  let outputs: Bun.BuildOutput | null = null;
+  const serveFromBuild = (request: Request) => {
+    const pathname = new URL(request.url).pathname;
+    const searchPath = join(cwd, config.pathToBuildDir!, pathname);
+    return outputs?.outputs
+      .find((output) => output.path === searchPath)
+      ?.stream();
+  };
 
   return {
     name: "frame-master-plugin-react-ssr",
     version: PackageJson.version,
     priority: config.priority,
+    requirement: {
+      frameMasterVersion: "^2.0.1",
+    },
     build: {
-      buildConfig:
-        process.env.NODE_ENV == "production"
-          ? createBuildConfig()
-          : createBuildConfig,
-      ...(process.env.NODE_ENV != "production" && {
-        afterBuild() {
-          router!.createClientFileSystemRouter();
-          router?.reset();
-          HMRBroadcast("update");
-        },
-      }),
+      ...(process.env.NODE_ENV === "production"
+        ? {
+            buildConfig: () => createBuildConfig(),
+            afterBuild(_conf, _outputs) {
+              outputs = _outputs;
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
+            },
+          }
+        : {
+            buildConfig: () => createBuildConfig(getDevRoutesEntryPoints()),
+            afterBuild(conf, _outputs) {
+              outputs = _outputs;
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.createClientFileSystemRouter();
+              globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__?.reset();
+              HMRBroadcast("update");
+            },
+          }),
     },
     websocket: {
       onOpen(ws) {
@@ -208,6 +253,19 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
                 server.upgrade(_req)
                   ? new Response("Welcome!", { status: 101 })
                   : new Response("Upgrade failed", { status: 500 }),
+
+              "/__react_ssr_plugin_dev_route__/:pathname": async (req) => {
+                const { pathname } = req.params as { pathname: string };
+                if (setDevRouteByPathname(pathname)) {
+                  await builder?.build();
+                  log(
+                    `[Dev Mode] Serving path: ${globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__}`
+                  );
+                  return new Response("Dev route set", { status: 200 });
+                } else {
+                  return new Response("Dev route unchanged", { status: 204 });
+                }
+              },
             }
           : {}),
       },
@@ -227,20 +285,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             config as Required<ReactSSRPluginOptions>,
           __REACT_SSR_PLUGIN_PARAMS__: {},
         });
-
-        // In dev mode, track the current path being requested
-        const matchClient = router?.fileSystemRouterClient.match(req.request);
-        if (process.env.NODE_ENV != "production" && matchClient) {
-          if (matchClient.pathname == currentDevPath) return;
-          currentDevPath = req.URL.pathname;
-          log(`[Dev Mode] Serving path: ${currentDevPath}`);
-        }
       },
       async request(req) {
         let jsPage: Bun.MatchedRoute | null = null;
         if (req.isResponseSetted()) return;
-
-        const res = serveFromBuild(req.URL.pathname, reactSSRBuilder!);
+        const res = serveFromBuild(req.request);
         if (res)
           return req
             .setResponse(res, {
@@ -251,7 +300,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             .sendNow();
 
         if (req.isAskingHTML) {
-          const pageMatch = router!.matchServer(req.request);
+          const pageMatch =
+            globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.matchServer(
+              req.request
+            );
           if (!pageMatch) return;
           req.setContext({
             __REACT_SSR_PLUGIN_PARAMS__: formatParams(pageMatch.params),
@@ -261,7 +313,11 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
           req.setResponse(await res, {
             headers: { "Content-Type": "text/html" },
           });
-        } else if ((jsPage = router!.matchClient(req.request))) {
+        } else if (
+          (jsPage = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.matchClient(
+            req.request
+          ))
+        ) {
           req.setResponse(Bun.file(jsPage.filePath).stream(), {
             headers: { "Content-Type": "application/javascript" },
           });
@@ -272,67 +328,81 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       async main() {
         // Load the shell component
         globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
-          await import(join(process.cwd(), config.pathToShellFile as string))
+          await import(join(cwd, config.pathToShellFile as string))
         ).default;
         globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__ = (
-          await import(
-            join(process.cwd(), config.pathToClientWrapper as string)
-          )
+          await import(join(cwd, config.pathToClientWrapper as string))
         ).default;
 
-        if (!router)
-          router = await Router.createRouter({
-            pageDir: config.pathToPagesDir!,
+        if (!globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__)
+          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__ ??=
+            await Router.createRouter({
+              pageDir: config.pathToPagesDir!,
+              buildDir: config.pathToBuildDir!,
+            });
+
+        globalThis.__REACT_SSR_PLUGIN_SERVER_BUILDER__ ??=
+          ReactSSRBuilder.createBuilder({
+            plugins: [
+              ...(config.buildConfig as Build_Plugins[]),
+            ] as Build_Plugins[],
             buildDir: config.pathToBuildDir!,
+            srcDir: config.pathToPagesDir!,
+            builder: builder!,
           });
-
-        reactSSRBuilder = ReactSSRBuilder.createBuilder({
-          plugins: [
-            ...(config.buildConfig as Build_Plugins[]),
-          ] as Build_Plugins[],
-          buildDir: config.pathToBuildDir!,
-          srcDir: config.pathToPagesDir!,
-          builder: builder!,
-        });
-
-        await builder?.build();
+        if (!builder?.isBuilding()) await builder?.build();
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
           config as Required<ReactSSRPluginOptions>;
 
         globalThis.__ROUTES__ = Object.keys(
-          router.fileSystemRouterServer.routes
+          globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterServer
+            .routes
         );
 
-        router.createClientFileSystemRouter();
+        globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.createClientFileSystemRouter();
         log({
-          clientRouter: router.fileSystemRouterClient.routes,
-          serverRouter: router.fileSystemRouterServer.routes,
+          clientRouter:
+            globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterClient
+              .routes,
+          serverRouter:
+            globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__.fileSystemRouterServer
+              .routes,
         });
       },
     },
     fileSystemWatchDir: [config.pathToPagesDir!],
     onFileSystemChange: async () => {
       globalThis.__ROUTES__ = Object.keys(
-        router!.fileSystemRouterServer.routes
+        globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.fileSystemRouterServer
+          .routes
       );
+      if (builder?.isBuilding()) return;
       await builder?.build();
     },
   } satisfies FrameMasterPlugin;
 }
 
-function serveFromBuild(pathname: string, reactSSRbuilder: ReactSSRBuilder) {
-  return (
-    reactSSRbuilder
-      .getFileFromPath(join(reactSSRbuilder.buildDir, pathname))
-      ?.stream() || null
-  );
+/** Set the Devroute return true if it's a new route and false otherwise */
+function setDevRouteByPathname(pathname: string) {
+  const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
+  if (!router) throw new Error("Router not initialized");
+
+  const matchClient = router.fileSystemRouterServer.match(pathname);
+  if (!matchClient) return false;
+  globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = pathname;
+  return true;
 }
 
 function log(...data: any[]) {
   if (globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) {
     console.log("[ReactSSR Plugin]:", ...data);
+  }
+}
+function error(...data: any[]) {
+  if (globalThis.__REACT_SSR_PLUGIN_OPTIONS__.debug) {
+    console.error("[ReactSSR Plugin][Error]:", ...data);
   }
 }
 
