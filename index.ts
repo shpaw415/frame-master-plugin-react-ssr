@@ -211,7 +211,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
     version: PackageJson.version,
     priority: config.priority,
     requirement: {
-      frameMasterVersion: "^2.0.0",
+      frameMasterVersion: "^2.0.1",
     },
     build: {
       ...(process.env.NODE_ENV === "production"
@@ -332,12 +332,10 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
       async main() {
         // Load the shell component
         globalThis.__REACT_SSR_PLUGIN_SHELL_COMPONENT__ = (
-          await import(join(process.cwd(), config.pathToShellFile as string))
+          await import(join(cwd, config.pathToShellFile as string))
         ).default;
         globalThis.__REACT_SSR_PLUGIN_CLIENT_WRAPPER_COMPONENT__ = (
-          await import(
-            join(process.cwd(), config.pathToClientWrapper as string)
-          )
+          await import(join(cwd, config.pathToClientWrapper as string))
         ).default;
 
         if (!globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__)
@@ -391,20 +389,6 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
 }
 
 /** Set the Devroute return true if it's a new route and false otherwise */
-function setDevRoute(request: Request) {
-  const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
-  if (!router) throw new Error("Router not initialized");
-
-  const matchClient = router.fileSystemRouterServer.match(request);
-  if (!matchClient) return false;
-  if (
-    /\/layout\.(jsx|tsx|js)$/.test(matchClient.filePath) ||
-    globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ === matchClient.name
-  )
-    return false;
-  globalThis.__REACT_SSR_PLUGIN_SERVER_DEV_ROUTE__ = matchClient.name;
-  return true;
-}
 function setDevRouteByPathname(pathname: string) {
   const router = globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__;
   if (!router) throw new Error("Router not initialized");
