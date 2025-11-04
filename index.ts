@@ -350,8 +350,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
             srcDir: config.pathToPagesDir!,
             builder: builder!,
           });
-
-        await builder?.build();
+        if (!builder?.isBuilding()) await builder?.build();
 
         // Populate the global __REACT_SSR_PLUGIN_OPTIONS__ variable
         globalThis.__REACT_SSR_PLUGIN_OPTIONS__ =
@@ -379,6 +378,7 @@ function createPlugin(options: ReactSSRPluginOptions): FrameMasterPlugin {
         globalThis.__REACT_SSR_PLUGIN_SERVER_ROUTER__!.fileSystemRouterServer
           .routes
       );
+      if (builder?.isBuilding()) return;
       await builder?.build();
     },
   } satisfies FrameMasterPlugin;
